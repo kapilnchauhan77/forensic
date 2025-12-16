@@ -78,7 +78,7 @@ services:
       dockerfile: Dockerfile
     container_name: forensic_celery_worker
     restart: unless-stopped
-    command: celery -A app.workers.tasks:celery_app worker --loglevel=info -Q processing,batch -c 2
+    command: celery -A app.workers.tasks:celery_app worker --loglevel=info -Q celery,processing,batch -c 2
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-forensic_db}
       DATABASE_SYNC_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-forensic_db}
