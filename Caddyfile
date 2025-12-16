@@ -1,0 +1,35 @@
+# Caddyfile for Forensic Fingerprint Platform
+# Replace your-domain.com with your actual domain
+
+{$DOMAIN:localhost} {
+    # Enable automatic HTTPS (Let's Encrypt)
+    # For localhost testing, comment out the tls line
+    # tls internal
+
+    # Frontend - serve React app
+    handle {
+        reverse_proxy frontend:80
+    }
+
+    # Backend API - proxy to FastAPI
+    handle /api/* {
+        reverse_proxy backend:8000
+    }
+
+    # Enable gzip compression
+    encode gzip
+
+    # Security headers
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+        -Server
+    }
+
+    # Logging
+    log {
+        output stdout
+        format console
+    }
+}
