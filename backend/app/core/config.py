@@ -39,6 +39,15 @@ class Settings(BaseSettings):
     # Google Gemini
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-1.5-pro"
+    GEMINI_IMAGE_MODEL: str = "gemini-3-pro-image-preview"
+
+    # Google Cloud (for Vertex AI)
+    GOOGLE_CLOUD_PROJECT: Optional[str] = None
+    GOOGLE_CLOUD_LOCATION: str = "us-central1"
+
+    # Enhancement settings
+    USE_GEMINI_ENHANCEMENT: bool = True  # Use Gemini for image enhancement
+    GEMINI_ENHANCEMENT_FALLBACK: bool = True  # Fall back to OpenCV if Gemini fails
 
     # Security
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours

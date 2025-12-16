@@ -14,7 +14,18 @@
       "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYzQ3NmFlYS1iZmVjLTQ2MDAtODE0Ny05NzUzNDYzNDYxMzQiLCJyb2xlIjoiYWRtaW4iLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNzY1NjU1NDU0fQ.vwU-VkusV2Cui1K8xiOLyZXUdSnTWl7t41jzG352w8E\":*)",
       "Bash(npm run build:*)",
       "Bash(npm install:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYzQ3NmFlYS1iZmVjLTQ2MDAtODE0Ny05NzUzNDYzNDYxMzQiLCJyb2xlIjoiYWRtaW4iLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNzY1NjU1NDU0fQ.vwU-VkusV2Cui1K8xiOLyZXUdSnTWl7t41jzG352w8E\" curl -s -X GET \"http://localhost:8000/api/v1/cases\" -H \"Authorization: Bearer $TOKEN\")",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYzQ3NmFlYS1iZmVjLTQ2MDAtODE0Ny05NzUzNDYzNDYxMzQiLCJyb2xlIjoiYWRtaW4iLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNzY1OTY1NzE5fQ.HHAc8NZ_8UMc-AXeD0NLedbE-V0rnsEJqR8Uq05Tc-E\" curl -s -X GET \"http://localhost:8000/api/v1/cases\" -H \"Authorization: Bearer $TOKEN\")",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYzQ3NmFlYS1iZmVjLTQ2MDAtODE0Ny05NzUzNDYzNDYxMzQiLCJyb2xlIjoiYWRtaW4iLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNzY1OTY1NzE5fQ.HHAc8NZ_8UMc-AXeD0NLedbE-V0rnsEJqR8Uq05Tc-E\" curl -s -X POST \"http://localhost:8000/api/v1/fingerprints/ed5bd599-25fd-4b4d-a98f-7eaa586f90d3/reprocess\" -H \"Authorization: Bearer $TOKEN\" -H \"Content-Type: application/json\" -d '{\"\"force\"\": true}')",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYzQ3NmFlYS1iZmVjLTQ2MDAtODE0Ny05NzUzNDYzNDYxMzQiLCJyb2xlIjoiYWRtaW4iLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNzY1OTY2MzUxfQ.Oq_3_zK4i8Y6olnwDuFkDKb4URq3NojE7ksl2uT5yPk\")",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYzQ3NmFlYS1iZmVjLTQ2MDAtODE0Ny05NzUzNDYzNDYxMzQiLCJyb2xlIjoiYWRtaW4iLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNzY1OTY2MzUxfQ.Oq_3_zK4i8Y6olnwDuFkDKb4URq3NojE7ksl2uT5yPk\" curl -s -X POST \"http://localhost:8000/api/v1/fingerprints/24d519c8-326c-47e0-ba2d-40f917561caa/reprocess\" -H \"Authorization: Bearer $TOKEN\" -H \"Content-Type: application/json\" -d '{\"\"\"\"force\"\"\"\": true}')",
+      "Bash(__NEW_LINE__ curl -s -X POST 'http://localhost:8000/api/v1/fingerprints/b0f04778-f525-42a2-859a-ec0211ec2a07/reprocess' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYzQ3NmFlYS1iZmVjLTQ2MDAtODE0Ny05NzUzNDYzNDYxMzQiLCJyb2xlIjoiYWRtaW4iLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNzY1OTY3MDY2fQ.RwOL39JVAEXs5wX03nInX1cOL2bPQz3UiiQdavRMYtg' -H 'Content-Type: application/json' -d '{\"\"force\"\": true}')",
+      "Bash(__NEW_LINE__ curl -s -X POST 'http://localhost:8000/api/v1/fingerprints/ed5bd599-25fd-4b4d-a98f-7eaa586f90d3/reprocess' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYzQ3NmFlYS1iZmVjLTQ2MDAtODE0Ny05NzUzNDYzNDYxMzQiLCJyb2xlIjoiYWRtaW4iLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNzY1OTY3MDY2fQ.RwOL39JVAEXs5wX03nInX1cOL2bPQz3UiiQdavRMYtg' -H 'Content-Type: application/json' -d '{\"\"force\"\": true}')",
+      "Bash(source:*)",
+      "Bash(alembic revision:*)",
+      "Bash(export DATABASE_SYNC_URL:*)",
+      "Bash(PGPASSWORD=postgres psql:*)"
     ],
     "deny": [],
     "ask": []

@@ -12,7 +12,7 @@ import {
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import { exhibitsApi, fingerprintsApi, casesApi } from '../services/api';
-import type { Exhibit, Fingerprint, Case } from '../types';
+import type { Exhibit, Fingerprint, Case, EnhancementMethod } from '../types';
 import toast from 'react-hot-toast';
 
 export default function ExhibitDetail() {
@@ -33,6 +33,12 @@ export default function ExhibitDetail() {
   const videoRefDesktop = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
+
+  // Enhancement method state
+  const [selectedEnhancementMethod, setSelectedEnhancementMethod] = useState<EnhancementMethod>('auto');
+  const [showProcessModal, setShowProcessModal] = useState(false);
+  const [processingFingerprintId, setProcessingFingerprintId] = useState<string | null>(null);
+  const [isProcessingInProgress, setIsProcessingInProgress] = useState(false);
 
   useEffect(() => {
     if (exhibitId) {
@@ -232,32 +238,46 @@ export default function ExhibitDetail() {
     }
   };
 
-  const handleProcessFingerprint = async (fingerprintId: string) => {
-    try {
-      await fingerprintsApi.process(fingerprintId);
-      toast.success('Processing started');
-      fetchData();
-    } catch (error) {
-      toast.error('Failed to start processing');
-    }
+  const openProcessModal = (fingerprintId: string | null = null) => {
+    setProcessingFingerprintId(fingerprintId);
+    setShowProcessModal(true);
   };
 
-  const handleProcessAll = async () => {
-    const pendingPrints = fingerprints.filter(fp => fp.status === 'pending');
-    if (pendingPrints.length === 0) {
+  const handleProcessFingerprint = async () => {
+    if (!processingFingerprintId && fingerprints.filter(fp => fp.status === 'pending').length === 0) {
       toast.error('No pending fingerprints to process');
       return;
     }
 
+    setIsProcessingInProgress(true);
     try {
-      for (const fp of pendingPrints) {
-        await fingerprintsApi.process(fp.id);
+      if (processingFingerprintId) {
+        // Process single fingerprint
+        await fingerprintsApi.process(processingFingerprintId, {
+          enhancement_method: selectedEnhancementMethod,
+        });
+        toast.success('Processing started');
+      } else {
+        // Process all pending
+        const pendingPrints = fingerprints.filter(fp => fp.status === 'pending');
+        for (const fp of pendingPrints) {
+          await fingerprintsApi.process(fp.id, {
+            enhancement_method: selectedEnhancementMethod,
+          });
+        }
+        toast.success(`Started processing ${pendingPrints.length} fingerprint(s)`);
       }
-      toast.success(`Started processing ${pendingPrints.length} fingerprint(s)`);
+      setShowProcessModal(false);
       fetchData();
     } catch (error) {
       toast.error('Failed to start processing');
+    } finally {
+      setIsProcessingInProgress(false);
     }
+  };
+
+  const handleProcessAll = () => {
+    openProcessModal(null);
   };
 
   const handleDeleteFingerprint = async (fingerprintId: string, filename: string) => {
@@ -706,7 +726,7 @@ export default function ExhibitDetail() {
                       <button
                         onClick={(e) => {
                           e.preventDefault();
-                          handleProcessFingerprint(fp.id);
+                          openProcessModal(fp.id);
                         }}
                         className="mt-2 w-full inline-flex justify-center items-center rounded-lg bg-forensic-600 px-2 py-2 text-xs font-medium text-white hover:bg-forensic-500 active:bg-forensic-700 min-h-touch"
                       >
@@ -721,6 +741,114 @@ export default function ExhibitDetail() {
           </div>
         )}
       </div>
+
+      {/* Process Modal with Enhancement Method Selection */}
+      {showProcessModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setShowProcessModal(false)} />
+
+            <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+              <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-forensic-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <PlayIcon className="h-6 w-6 text-forensic-600" />
+                  </div>
+                  <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left flex-1">
+                    <h3 className="text-base font-semibold leading-6 text-gray-900">
+                      {processingFingerprintId ? 'Process Fingerprint' : `Process All Pending (${fingerprints.filter(fp => fp.status === 'pending').length})`}
+                    </h3>
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Enhancement Method
+                      </label>
+                      <div className="space-y-2">
+                        <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                          <input
+                            type="radio"
+                            name="enhancementMethod"
+                            value="auto"
+                            checked={selectedEnhancementMethod === 'auto'}
+                            onChange={() => setSelectedEnhancementMethod('auto')}
+                            className="mt-1 h-4 w-4 text-forensic-600 focus:ring-forensic-500"
+                          />
+                          <div className="ml-3">
+                            <span className="block text-sm font-medium text-gray-900">Auto (Recommended)</span>
+                            <span className="block text-xs text-gray-500">Uses AI enhancement when available, falls back to traditional methods</span>
+                          </div>
+                        </label>
+
+                        <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                          <input
+                            type="radio"
+                            name="enhancementMethod"
+                            value="gemini"
+                            checked={selectedEnhancementMethod === 'gemini'}
+                            onChange={() => setSelectedEnhancementMethod('gemini')}
+                            className="mt-1 h-4 w-4 text-forensic-600 focus:ring-forensic-500"
+                          />
+                          <div className="ml-3">
+                            <span className="block text-sm font-medium text-gray-900">
+                              AI Enhancement (Gemini)
+                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                AI
+                              </span>
+                            </span>
+                            <span className="block text-xs text-gray-500">Advanced AI-powered reconstruction for smudged or damaged prints</span>
+                          </div>
+                        </label>
+
+                        <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                          <input
+                            type="radio"
+                            name="enhancementMethod"
+                            value="opencv"
+                            checked={selectedEnhancementMethod === 'opencv'}
+                            onChange={() => setSelectedEnhancementMethod('opencv')}
+                            className="mt-1 h-4 w-4 text-forensic-600 focus:ring-forensic-500"
+                          />
+                          <div className="ml-3">
+                            <span className="block text-sm font-medium text-gray-900">Traditional (OpenCV)</span>
+                            <span className="block text-xs text-gray-500">Classic image processing algorithms (Gabor filters, CLAHE)</span>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                <button
+                  type="button"
+                  onClick={handleProcessFingerprint}
+                  disabled={isProcessingInProgress}
+                  className="inline-flex w-full justify-center rounded-md bg-forensic-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-forensic-500 sm:ml-3 sm:w-auto disabled:opacity-50"
+                >
+                  {isProcessingInProgress ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <PlayIcon className="h-4 w-4 mr-2" />
+                      Start Processing
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowProcessModal(false)}
+                  disabled={isProcessingInProgress}
+                  className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import axios from 'axios';
 import type {
   User, Case, Exhibit, Fingerprint,
-  CaseListResponse, PipelineConfig, PipelineVersion
+  CaseListResponse, PipelineConfig, PipelineVersion,
+  ProcessOptions
 } from '../types';
 
 const API_BASE = '/api/v1';
@@ -123,17 +124,25 @@ export const fingerprintsApi = {
     const response = await api.get(`/fingerprints/${id}`);
     return response.data;
   },
-  process: async (id: string, preset = 'rolled_plain'): Promise<Fingerprint> => {
+  process: async (
+    id: string,
+    options: ProcessOptions = {}
+  ): Promise<Fingerprint> => {
     const response = await api.post(`/fingerprints/${id}/process`, {
-      enhancement_preset: preset,
-      generate_variants: true,
+      enhancement_preset: options.enhancement_preset || 'rolled_plain',
+      enhancement_method: options.enhancement_method || 'auto',
+      generate_variants: options.generate_variants ?? true,
     });
     return response.data;
   },
-  reprocess: async (id: string, preset?: string, force = false): Promise<Fingerprint> => {
+  reprocess: async (
+    id: string,
+    options: ProcessOptions = {}
+  ): Promise<Fingerprint> => {
     const response = await api.post(`/fingerprints/${id}/reprocess`, {
-      enhancement_preset: preset,
-      force,
+      enhancement_preset: options.enhancement_preset,
+      enhancement_method: options.enhancement_method || 'auto',
+      force: options.force ?? false,
     });
     return response.data;
   },

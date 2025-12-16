@@ -5,6 +5,7 @@ celery_app = Celery(
     "forensic_worker",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
+    include=["app.workers.tasks"],  # Explicitly include task modules
 )
 
 celery_app.conf.update(
@@ -19,8 +20,8 @@ celery_app.conf.update(
     task_acks_late=True,  # Acknowledge after task completion
 )
 
-# Task routing
+# Task routing - use default celery queue for simplicity
 celery_app.conf.task_routes = {
-    "app.workers.tasks.process_fingerprint_task": {"queue": "processing"},
-    "app.workers.tasks.batch_process_task": {"queue": "batch"},
+    "app.workers.tasks.process_fingerprint_task": {"queue": "celery"},
+    "app.workers.tasks.batch_process_task": {"queue": "celery"},
 }

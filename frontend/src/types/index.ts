@@ -48,12 +48,30 @@ export interface QualityIssue {
   description: string;
 }
 
+export interface SingularPointPosition {
+  x: number;
+  y: number;
+  type?: string;
+}
+
+export interface MinutiaeBreakdown {
+  ridge_endings: number;
+  bifurcations: number;
+  short_ridges: number;
+  dots: number;
+  islands: number;
+  other: number;
+}
+
+export type EnhancementMethod = 'auto' | 'gemini' | 'opencv';
+
 export interface ProcessingResult {
   id: string;
   enhanced_storage_path: string;
   enhanced_url: string | null;
   pipeline_version: string;
   enhancement_preset: string;
+  enhancement_method?: EnhancementMethod;
   quality_score_before: number | null;
   quality_score_after: number | null;
   quality_improvement: number | null;
@@ -63,6 +81,16 @@ export interface ProcessingResult {
   is_primary: boolean;
   created_at: string;
 }
+
+export interface ProcessOptions {
+  enhancement_preset?: string;
+  enhancement_method?: EnhancementMethod;
+  generate_variants?: boolean;
+  force?: boolean;
+}
+
+export type EvidenceType = 'latent' | 'patent' | 'plastic' | 'unknown';
+export type DetailLevel = 'level_1' | 'level_2' | 'level_3';
 
 export interface Fingerprint {
   id: string;
@@ -74,6 +102,7 @@ export interface Fingerprint {
   image_width: number | null;
   image_height: number | null;
   dpi: number | null;
+  evidence_type: EvidenceType;
   print_type: string;
   finger_position: string;
   subject_id: string | null;
@@ -81,9 +110,37 @@ export interface Fingerprint {
   processing_error: string | null;
   quality_score: number | null;
   quality_issues: QualityIssue[] | null;
+
+  // Classification results
+  detail_level: DetailLevel | null;
   pattern_type: string | null;
+  pattern_subtype: string | null;
   pattern_confidence: number | null;
   classification_rationale: string | null;
+
+  // FBI/NCIC Classification
+  ncic_code: string | null;
+  henry_value: number | null;
+  ridge_count: number | null;
+  core_count: number | null;
+  delta_count: number | null;
+
+  // Singular point positions
+  core_positions: SingularPointPosition[] | null;
+  delta_positions: SingularPointPosition[] | null;
+
+  // Minutiae summary
+  minutiae_count: number | null;
+  minutiae_details: MinutiaeBreakdown | null;
+
+  // Ridge characteristics
+  ridge_flow_direction: string | null;
+  ridge_density: number | null;
+
+  // Examiner fields
+  examiner_notes: string | null;
+  manual_override: boolean;
+
   exhibit_id: string;
   uploaded_by_id: string;
   created_at: string;

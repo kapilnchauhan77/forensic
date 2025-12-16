@@ -12,7 +12,7 @@ import {
   ChevronDownIcon,
 } from '@heroicons/react/24/outline';
 import { fingerprintsApi, exhibitsApi, casesApi, exportApi } from '../services/api';
-import type { Fingerprint, Exhibit, Case, ProcessingResult } from '../types';
+import type { Fingerprint, Exhibit, Case, ProcessingResult, EnhancementMethod } from '../types';
 import toast from 'react-hot-toast';
 
 export default function FingerprintViewer() {
@@ -27,6 +27,9 @@ export default function FingerprintViewer() {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [showReprocessModal, setShowReprocessModal] = useState(false);
+  const [selectedEnhancementMethod, setSelectedEnhancementMethod] = useState<EnhancementMethod>('auto');
+  const [isReprocessing, setIsReprocessing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<HTMLDivElement>(null);
 
@@ -134,12 +137,19 @@ export default function FingerprintViewer() {
   }, []);
 
   const handleReprocess = async () => {
+    setIsReprocessing(true);
     try {
-      await fingerprintsApi.reprocess(fingerprintId!, undefined, true);
+      await fingerprintsApi.reprocess(fingerprintId!, {
+        enhancement_method: selectedEnhancementMethod,
+        force: true,
+      });
       toast.success('Reprocessing started');
+      setShowReprocessModal(false);
       fetchData();
     } catch (error) {
       toast.error('Failed to start reprocessing');
+    } finally {
+      setIsReprocessing(false);
     }
   };
 
@@ -423,15 +433,15 @@ export default function FingerprintViewer() {
                       draggable={false}
                     />
                   </div>
-                  {/* Original image (clipped) */}
+                  {/* Original image (clipped) - use clip-path for proper sizing */}
                   <div
-                    className="absolute inset-0 overflow-hidden flex items-center justify-center"
-                    style={{ width: `${sliderPosition}%` }}
+                    className="absolute inset-0 flex items-center justify-center"
+                    style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
                   >
                     <img
                       src={originalUrl}
                       alt="Original"
-                      className="max-h-full object-contain"
+                      className="max-w-full max-h-full object-contain"
                       style={{ transform: `scale(${zoom})` }}
                       draggable={false}
                     />
@@ -520,7 +530,7 @@ export default function FingerprintViewer() {
                 </span>
                 <div className="flex space-x-2">
                   <button
-                    onClick={handleReprocess}
+                    onClick={() => setShowReprocessModal(true)}
                     className="inline-flex items-center px-3 py-1.5 text-xs rounded-lg bg-gray-100 hover:bg-gray-200 active:bg-gray-300 min-h-touch"
                     title="Reprocess"
                   >
@@ -553,18 +563,155 @@ export default function FingerprintViewer() {
               <div className="bg-white shadow rounded-lg p-4">
                 <h3 className="text-sm font-medium text-gray-900 mb-3">Classification</h3>
                 <div className="space-y-3">
+                  {/* Evidence Type & Detail Level badges */}
+                  <div className="flex flex-wrap gap-2">
+                    {fingerprint.evidence_type && fingerprint.evidence_type.toLowerCase() !== 'unknown' && (
+                      <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                        fingerprint.evidence_type.toLowerCase() === 'latent' ? 'bg-blue-100 text-blue-800' :
+                        fingerprint.evidence_type.toLowerCase() === 'patent' ? 'bg-amber-100 text-amber-800' :
+                        fingerprint.evidence_type.toLowerCase() === 'plastic' ? 'bg-green-100 text-green-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {fingerprint.evidence_type.charAt(0).toUpperCase() + fingerprint.evidence_type.slice(1).toLowerCase()} Print
+                      </span>
+                    )}
+                    {fingerprint.detail_level && (
+                      <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                        fingerprint.detail_level.toLowerCase() === 'level_3' ? 'bg-green-100 text-green-800' :
+                        fingerprint.detail_level.toLowerCase() === 'level_2' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {fingerprint.detail_level.toLowerCase() === 'level_1' ? 'Level 1 (Ridge Flow)' :
+                         fingerprint.detail_level.toLowerCase() === 'level_2' ? 'Level 2 (Minutiae)' :
+                         'Level 3 (Fine Detail)'}
+                      </span>
+                    )}
+                  </div>
+
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="pattern-badge capitalize">
-                      {fingerprint.pattern_type.replace('_', ' ')}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className="pattern-badge capitalize">
+                        {fingerprint.pattern_type.replace('_', ' ')}
+                      </span>
+                      {fingerprint.pattern_subtype && fingerprint.pattern_subtype !== 'unknown' && (
+                        <span className="text-xs text-gray-600 capitalize">
+                          {fingerprint.pattern_subtype.replace(/_/g, ' ')}
+                        </span>
+                      )}
+                    </div>
                     <span className="text-sm text-gray-500">
                       {fingerprint.pattern_confidence
                         ? `${(fingerprint.pattern_confidence * 100).toFixed(0)}% confidence`
                         : ''}
                     </span>
                   </div>
+
+                  {/* FBI/NCIC Codes */}
+                  {(fingerprint.ncic_code || fingerprint.henry_value !== null) && (
+                    <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
+                      {fingerprint.ncic_code && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-mono bg-gray-100 text-gray-800 rounded">
+                          NCIC: {fingerprint.ncic_code}
+                        </span>
+                      )}
+                      {fingerprint.henry_value !== null && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-mono bg-gray-100 text-gray-800 rounded">
+                          Henry: {fingerprint.henry_value}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Singular Points */}
+                  {(fingerprint.core_count !== null || fingerprint.delta_count !== null) && (
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-lg font-semibold text-gray-900">{fingerprint.core_count ?? 0}</div>
+                        <div className="text-xs text-gray-500">Core{fingerprint.core_count !== 1 ? 's' : ''}</div>
+                      </div>
+                      <div className="text-center p-2 bg-gray-50 rounded">
+                        <div className="text-lg font-semibold text-gray-900">{fingerprint.delta_count ?? 0}</div>
+                        <div className="text-xs text-gray-500">Delta{fingerprint.delta_count !== 1 ? 's' : ''}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Ridge Count & Flow */}
+                  {(fingerprint.ridge_count !== null || fingerprint.ridge_flow_direction) && (
+                    <dl className="space-y-1 pt-2 border-t border-gray-100 text-sm">
+                      {fingerprint.ridge_count !== null && (
+                        <div className="flex justify-between">
+                          <dt className="text-gray-500">Ridge Count</dt>
+                          <dd className="text-gray-900 font-medium">{fingerprint.ridge_count}</dd>
+                        </div>
+                      )}
+                      {fingerprint.ridge_flow_direction && (
+                        <div className="flex justify-between">
+                          <dt className="text-gray-500">Ridge Flow</dt>
+                          <dd className="text-gray-900 capitalize">{fingerprint.ridge_flow_direction.replace(/_/g, ' ')}</dd>
+                        </div>
+                      )}
+                      {fingerprint.ridge_density !== null && (
+                        <div className="flex justify-between">
+                          <dt className="text-gray-500">Ridge Density</dt>
+                          <dd className="text-gray-900">{fingerprint.ridge_density.toFixed(2)} ridges/mm</dd>
+                        </div>
+                      )}
+                    </dl>
+                  )}
+
+                  {/* Minutiae Summary */}
+                  {fingerprint.minutiae_count !== null && (
+                    <div className="pt-2 border-t border-gray-100">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-gray-500">Minutiae Count</span>
+                        <span className="text-sm font-semibold text-gray-900">{fingerprint.minutiae_count}</span>
+                      </div>
+                      {fingerprint.minutiae_details && (
+                        <div className="grid grid-cols-3 gap-1 text-xs">
+                          {fingerprint.minutiae_details.ridge_endings > 0 && (
+                            <div className="text-center p-1 bg-blue-50 rounded">
+                              <div className="font-medium text-blue-900">{fingerprint.minutiae_details.ridge_endings}</div>
+                              <div className="text-blue-600">Endings</div>
+                            </div>
+                          )}
+                          {fingerprint.minutiae_details.bifurcations > 0 && (
+                            <div className="text-center p-1 bg-green-50 rounded">
+                              <div className="font-medium text-green-900">{fingerprint.minutiae_details.bifurcations}</div>
+                              <div className="text-green-600">Bifurc.</div>
+                            </div>
+                          )}
+                          {fingerprint.minutiae_details.short_ridges > 0 && (
+                            <div className="text-center p-1 bg-yellow-50 rounded">
+                              <div className="font-medium text-yellow-900">{fingerprint.minutiae_details.short_ridges}</div>
+                              <div className="text-yellow-600">Short</div>
+                            </div>
+                          )}
+                          {fingerprint.minutiae_details.dots > 0 && (
+                            <div className="text-center p-1 bg-purple-50 rounded">
+                              <div className="font-medium text-purple-900">{fingerprint.minutiae_details.dots}</div>
+                              <div className="text-purple-600">Dots</div>
+                            </div>
+                          )}
+                          {fingerprint.minutiae_details.islands > 0 && (
+                            <div className="text-center p-1 bg-pink-50 rounded">
+                              <div className="font-medium text-pink-900">{fingerprint.minutiae_details.islands}</div>
+                              <div className="text-pink-600">Islands</div>
+                            </div>
+                          )}
+                          {fingerprint.minutiae_details.other > 0 && (
+                            <div className="text-center p-1 bg-gray-50 rounded">
+                              <div className="font-medium text-gray-900">{fingerprint.minutiae_details.other}</div>
+                              <div className="text-gray-600">Other</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {fingerprint.classification_rationale && (
-                    <p className="text-sm text-gray-600 border-l-2 border-forensic-200 pl-3">
+                    <p className="text-sm text-gray-600 border-l-2 border-forensic-200 pl-3 pt-2">
                       {fingerprint.classification_rationale}
                     </p>
                   )}
@@ -632,9 +779,21 @@ export default function FingerprintViewer() {
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium capitalize">
-                          {result.enhancement_preset.replace('_', ' ')}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium capitalize">
+                            {result.enhancement_preset.replace('_', ' ')}
+                          </span>
+                          {result.enhancement_method === 'gemini' && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                              AI
+                            </span>
+                          )}
+                          {result.enhancement_method === 'opencv' && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                              OpenCV
+                            </span>
+                          )}
+                        </div>
                         {result.is_primary && (
                           <CheckCircleIcon className="h-4 w-4 text-green-500" />
                         )}
@@ -689,12 +848,28 @@ export default function FingerprintViewer() {
                     {(fingerprint.file_size_bytes / 1024).toFixed(1)} KB
                   </dd>
                 </div>
+                {fingerprint.evidence_type && fingerprint.evidence_type.toLowerCase() !== 'unknown' && (
+                  <div className="flex justify-between">
+                    <dt className="text-gray-500">Evidence Type</dt>
+                    <dd className="text-gray-900 capitalize">
+                      {fingerprint.evidence_type.toLowerCase()}
+                    </dd>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <dt className="text-gray-500">Print Type</dt>
                   <dd className="text-gray-900 capitalize">
                     {fingerprint.print_type.replace('_', ' ')}
                   </dd>
                 </div>
+                {fingerprint.finger_position && fingerprint.finger_position !== 'unknown' && (
+                  <div className="flex justify-between">
+                    <dt className="text-gray-500">Finger Position</dt>
+                    <dd className="text-gray-900 capitalize">
+                      {fingerprint.finger_position.replace(/_/g, ' ')}
+                    </dd>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <dt className="text-gray-500">SHA-256</dt>
                   <dd className="text-gray-900 font-mono text-xs truncate max-w-[150px] sm:max-w-[200px]" title={fingerprint.original_hash_sha256}>
@@ -706,6 +881,111 @@ export default function FingerprintViewer() {
           </div>
         </div>
       </div>
+
+      {/* Reprocess Modal */}
+      {showReprocessModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setShowReprocessModal(false)} />
+
+            <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+              <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-forensic-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <ArrowPathIcon className="h-6 w-6 text-forensic-600" />
+                  </div>
+                  <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left flex-1">
+                    <h3 className="text-base font-semibold leading-6 text-gray-900">
+                      Reprocess Fingerprint
+                    </h3>
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Enhancement Method
+                      </label>
+                      <div className="space-y-2">
+                        <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                          <input
+                            type="radio"
+                            name="enhancementMethod"
+                            value="auto"
+                            checked={selectedEnhancementMethod === 'auto'}
+                            onChange={() => setSelectedEnhancementMethod('auto')}
+                            className="mt-1 h-4 w-4 text-forensic-600 focus:ring-forensic-500"
+                          />
+                          <div className="ml-3">
+                            <span className="block text-sm font-medium text-gray-900">Auto (Recommended)</span>
+                            <span className="block text-xs text-gray-500">Uses AI enhancement when available, falls back to traditional methods</span>
+                          </div>
+                        </label>
+
+                        <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                          <input
+                            type="radio"
+                            name="enhancementMethod"
+                            value="gemini"
+                            checked={selectedEnhancementMethod === 'gemini'}
+                            onChange={() => setSelectedEnhancementMethod('gemini')}
+                            className="mt-1 h-4 w-4 text-forensic-600 focus:ring-forensic-500"
+                          />
+                          <div className="ml-3">
+                            <span className="block text-sm font-medium text-gray-900">
+                              AI Enhancement (Gemini)
+                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                AI
+                              </span>
+                            </span>
+                            <span className="block text-xs text-gray-500">Advanced AI-powered reconstruction for smudged or damaged prints</span>
+                          </div>
+                        </label>
+
+                        <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                          <input
+                            type="radio"
+                            name="enhancementMethod"
+                            value="opencv"
+                            checked={selectedEnhancementMethod === 'opencv'}
+                            onChange={() => setSelectedEnhancementMethod('opencv')}
+                            className="mt-1 h-4 w-4 text-forensic-600 focus:ring-forensic-500"
+                          />
+                          <div className="ml-3">
+                            <span className="block text-sm font-medium text-gray-900">Traditional (OpenCV)</span>
+                            <span className="block text-xs text-gray-500">Classic image processing algorithms (Gabor filters, CLAHE)</span>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                <button
+                  type="button"
+                  onClick={handleReprocess}
+                  disabled={isReprocessing}
+                  className="inline-flex w-full justify-center rounded-md bg-forensic-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-forensic-500 sm:ml-3 sm:w-auto disabled:opacity-50"
+                >
+                  {isReprocessing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      Processing...
+                    </>
+                  ) : (
+                    'Start Reprocessing'
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowReprocessModal(false)}
+                  disabled={isReprocessing}
+                  className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
