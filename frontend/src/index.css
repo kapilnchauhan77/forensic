@@ -1,0 +1,173 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* PWA and Mobile optimizations */
+:root {
+  --sat: env(safe-area-inset-top);
+  --sar: env(safe-area-inset-right);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+}
+
+html {
+  /* Prevent pull-to-refresh on mobile */
+  overscroll-behavior-y: contain;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900;
+  /* Support for dynamic viewport height */
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+  /* Prevent text size adjustment on orientation change */
+  -webkit-text-size-adjust: 100%;
+  /* Safe area padding for notched devices */
+  padding-top: var(--sat);
+  padding-left: var(--sal);
+  padding-right: var(--sar);
+}
+
+/* Touch-friendly button base */
+@layer components {
+  .btn-touch {
+    @apply min-h-touch min-w-touch inline-flex items-center justify-center;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .touch-target {
+    @apply relative;
+  }
+
+  .touch-target::before {
+    content: '';
+    @apply absolute inset-0;
+    min-height: 44px;
+    min-width: 44px;
+    transform: translate(-50%, -50%);
+    left: 50%;
+    top: 50%;
+  }
+}
+
+/* Fingerprint viewer styles */
+.fingerprint-viewer {
+  @apply relative overflow-hidden bg-black rounded-lg;
+  touch-action: none; /* Enable custom touch gestures */
+}
+
+.fingerprint-viewer img {
+  @apply max-w-full h-auto;
+  image-rendering: pixelated;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* Quality badges */
+.quality-badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.quality-badge.high {
+  @apply bg-green-100 text-green-800;
+}
+
+.quality-badge.medium {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.quality-badge.low {
+  @apply bg-red-100 text-red-800;
+}
+
+/* Pattern badge */
+.pattern-badge {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-forensic-100 text-forensic-800;
+}
+
+/* Status badges */
+.status-badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.status-badge.pending {
+  @apply bg-gray-100 text-gray-800;
+}
+
+.status-badge.processing {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.status-badge.completed {
+  @apply bg-green-100 text-green-800;
+}
+
+.status-badge.failed {
+  @apply bg-red-100 text-red-800;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 640px) {
+  /* Larger touch targets on mobile */
+  .mobile-card {
+    @apply p-4;
+  }
+
+  /* Full-width buttons on mobile */
+  .mobile-btn-full {
+    @apply w-full;
+  }
+
+  /* Stack navigation items */
+  .mobile-stack {
+    @apply flex-col space-y-2;
+  }
+}
+
+/* Bottom navigation spacing */
+.has-bottom-nav {
+  padding-bottom: calc(64px + var(--sab));
+}
+
+/* Camera modal full screen on mobile */
+@media (max-width: 640px) {
+  .camera-modal {
+    @apply fixed inset-0 z-50;
+  }
+
+  .camera-modal video {
+    @apply w-full h-full object-cover;
+  }
+}
+
+/* Smooth scrolling for iOS */
+.scroll-smooth {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Prevent zoom on double-tap for buttons */
+button, a {
+  touch-action: manipulation;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}

@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl:*)",
+      "Bash(pgrep:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYzQ3NmFlYS1iZmVjLTQ2MDAtODE0Ny05NzUzNDYzNDYxMzQiLCJyb2xlIjoiYWRtaW4iLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNzY1NjQ2MjA5fQ.H660PdtxNDtHAMMf4ygBXiJZeKx31ctV1fitatDkrL8\")",
+      "Bash(redis-cli ping:*)",
+      "Bash(redis-cli:*)",
+      "Bash(python3:*)",
+      "Bash(pkill:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYzQ3NmFlYS1iZmVjLTQ2MDAtODE0Ny05NzUzNDYzNDYxMzQiLCJyb2xlIjoiYWRtaW4iLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNzY1NjQ2MjA5fQ.H660PdtxNDtHAMMf4ygBXiJZeKx31ctV1fitatDkrL8\" curl -s -X POST \"http://localhost:8000/api/v1/fingerprints/f1f00fb5-9ed4-4364-b723-1b926cff73df/reprocess\" -H \"Authorization: Bearer $TOKEN\" -H \"Content-Type: application/json\" -d '{\"\"\"\"force\"\"\"\": true}')",
+      "Bash(psql:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYzQ3NmFlYS1iZmVjLTQ2MDAtODE0Ny05NzUzNDYzNDYxMzQiLCJyb2xlIjoiYWRtaW4iLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNzY1NjQ2MjA5fQ.H660PdtxNDtHAMMf4ygBXiJZeKx31ctV1fitatDkrL8\" curl -s -X POST \"http://localhost:8000/api/v1/fingerprints/f1f00fb5-9ed4-4364-b723-1b926cff73df/reprocess\" -H \"Authorization: Bearer $TOKEN\" -H \"Content-Type: application/json\" -d '{\"\"force\"\": true}')",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxYzQ3NmFlYS1iZmVjLTQ2MDAtODE0Ny05NzUzNDYzNDYxMzQiLCJyb2xlIjoiYWRtaW4iLCJ1c2VybmFtZSI6ImFkbWluIiwiZXhwIjoxNzY1NjU1NDU0fQ.vwU-VkusV2Cui1K8xiOLyZXUdSnTWl7t41jzG352w8E\":*)",
+      "Bash(npm run build:*)",
+      "Bash(npm install:*)",
+      "Bash(cat:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
