@@ -25,7 +25,9 @@
       "Bash(source:*)",
       "Bash(alembic revision:*)",
       "Bash(export DATABASE_SYNC_URL:*)",
-      "Bash(PGPASSWORD=postgres psql:*)"
+      "Bash(PGPASSWORD=postgres psql:*)",
+      "Bash(python:*)",
+      "Bash(celery:*)"
     ],
     "deny": [],
     "ask": []

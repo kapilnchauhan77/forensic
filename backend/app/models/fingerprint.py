@@ -45,6 +45,7 @@ class PatternType(str, enum.Enum):
     # Special cases
     UNKNOWN = "unknown"  # Cannot determine with forensic confidence
     PARTIAL = "partial"  # Insufficient ridge area visible for classification
+    NOT_PRESENT = "not_present"  # No fingerprint detected in image
 
 
 class PatternSubtype(str, enum.Enum):
@@ -72,6 +73,7 @@ class PatternSubtype(str, enum.Enum):
     SCARRED = "scarred"  # Permanent scarring affecting pattern
     AMPUTATED = "amputated"  # Finger missing or partially missing
     BANDAGED = "bandaged"  # Temporarily obscured
+    NOT_PRESENT = "not_present"  # No fingerprint detected in image
 
 
 class DetailLevel(str, enum.Enum):

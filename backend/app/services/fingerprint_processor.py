@@ -12,7 +12,7 @@ from ..models.fingerprint import Fingerprint, FingerprintProcessingResult, Proce
 from ..models.pipeline import PipelineConfig
 from ..core.config import settings
 from .enhancement import FingerprintEnhancer, EnhancementResult, image_to_bytes, bytes_to_image
-from .quality import FingerprintQualityAssessor
+from .quality import FingerprintQualityAssessor, FingerprintPresenceDetector
 from .classification import FingerprintClassifier
 from .storage import StorageService
 from .gemini_enhancement import get_gemini_enhancer, GeminiEnhancementResult
@@ -29,6 +29,7 @@ class FingerprintProcessorService:
         self.db = db
         self.storage = StorageService()
         self.quality_assessor = FingerprintQualityAssessor()
+        self.presence_detector = FingerprintPresenceDetector()
         self.classifier = FingerprintClassifier()
 
     async def process(
@@ -70,6 +71,26 @@ class FingerprintProcessorService:
             ]
             await self.db.commit()
 
+            # Step 1.5: Fingerprint presence detection (pre-filter)
+            presence_result = self.presence_detector.detect(original_image)
+            logger.info(
+                f"Fingerprint presence check for {fingerprint_id}: "
+                f"present={presence_result.fingerprint_present}, "
+                f"confidence={presence_result.confidence:.3f}, "
+                f"reason={presence_result.reason}"
+            )
+
+            # If no fingerprint is detected, skip enhancement and classification
+            if not presence_result.fingerprint_present:
+                logger.info(f"No fingerprint detected in {fingerprint_id}, classifying as NOT_PRESENT")
+                return await self._handle_no_fingerprint(
+                    fingerprint=fingerprint,
+                    presence_result=presence_result,
+                    quality_result=quality_result,
+                    original_image=original_image,
+                    enhancement_preset=enhancement_preset,
+                )
+
             # Step 2: Get enhancement config
             config = await self._get_pipeline_config(enhancement_preset)
 
@@ -100,11 +121,73 @@ class FingerprintProcessorService:
                     overlay_type="ridge_orientation",
                 )
 
-            # Step 6: Classification
+            # Step 5.5: Pre-classification gate (Two-stage VLM)
+            # First ask VLM "Is this a genuine fingerprint?" before detailed classification
+            try:
+                is_genuine, image_type, pre_reason = self.classifier.pre_classify_image(
+                    enhancement_result.enhanced_image
+                )
+                logger.info(
+                    f"Pre-classification for {fingerprint_id}: "
+                    f"genuine={is_genuine}, type={image_type}, reason={pre_reason}"
+                )
+
+                if not is_genuine:
+                    logger.info(f"Pre-classification rejected {fingerprint_id} as '{image_type}'")
+                    # Update presence_result reason with VLM's assessment
+                    from dataclasses import replace
+                    presence_result = replace(
+                        presence_result,
+                        reason=f"VLM pre-classification: {pre_reason}",
+                        fingerprint_present=False,
+                    )
+                    return await self._handle_no_fingerprint(
+                        fingerprint=fingerprint,
+                        presence_result=presence_result,
+                        quality_result=quality_result,
+                        original_image=original_image,
+                        enhancement_preset=enhancement_preset,
+                    )
+            except Exception as e:
+                logger.error(f"Pre-classification error for {fingerprint_id}: {e}")
+                # On error, proceed with classification (fail-open)
+
+            # Step 6: Classification (only reached if pre-classification passed)
             classification_result = self.classifier.classify(
                 enhancement_result.enhanced_image,
                 quality_score=quality_result.score,
             )
+
+            # Step 6.5: Cross-validation - Override VLM if presence detector was uncertain
+            # This catches cases where VLM hallucinates fingerprints on non-fingerprint images
+            # Threshold raised to 0.75 to be more aggressive against hallucinations
+            if (presence_result.confidence < 0.75 and
+                classification_result.confidence > 0.5 and
+                classification_result.pattern_type not in ["unknown", "not_present", "partial"]):
+                logger.warning(
+                    f"Cross-validation override for {fingerprint_id}: "
+                    f"VLM confidence ({classification_result.confidence:.2f}) conflicts with "
+                    f"presence detector ({presence_result.confidence:.3f}). "
+                    f"Treating as NOT_PRESENT."
+                )
+                return await self._handle_no_fingerprint(
+                    fingerprint=fingerprint,
+                    presence_result=presence_result,
+                    quality_result=quality_result,
+                    original_image=original_image,
+                    enhancement_preset=enhancement_preset,
+                )
+
+            # Also check if VLM explicitly said it's not a fingerprint
+            if not classification_result.is_fingerprint or classification_result.pattern_type == "not_present":
+                logger.info(f"VLM classified {fingerprint_id} as not a fingerprint")
+                return await self._handle_no_fingerprint(
+                    fingerprint=fingerprint,
+                    presence_result=presence_result,
+                    quality_result=quality_result,
+                    original_image=original_image,
+                    enhancement_preset=enhancement_preset,
+                )
 
             # Step 7: Generate rationale overlay
             rationale_overlay = self.classifier.generate_rationale_overlay(
@@ -166,6 +249,7 @@ class FingerprintProcessorService:
                 "whorl": PatternType.WHORL,
                 "unknown": PatternType.UNKNOWN,
                 "partial": PatternType.PARTIAL,
+                "not_present": PatternType.NOT_PRESENT,
             }
             subtype_map = {
                 "plain_arch": PatternSubtype.PLAIN_ARCH,
@@ -184,6 +268,7 @@ class FingerprintProcessorService:
                 "amputated": PatternSubtype.AMPUTATED,
                 "bandaged": PatternSubtype.BANDAGED,
                 "unknown": PatternSubtype.UNKNOWN,
+                "not_present": PatternSubtype.NOT_PRESENT,
             }
             detail_level_map = {
                 "level_1": DetailLevel.LEVEL_1,
@@ -417,3 +502,108 @@ class FingerprintProcessorService:
                 print(f"Failed to generate variant {preset}: {e}")
 
         await self.db.commit()
+
+    async def _handle_no_fingerprint(
+        self,
+        fingerprint: Fingerprint,
+        presence_result,  # FingerprintPresenceResult
+        quality_result,  # QualityAssessmentResult
+        original_image: np.ndarray,
+        enhancement_preset: str,
+    ) -> Fingerprint:
+        """
+        Handle the case when no fingerprint is detected in the image.
+
+        Skips enhancement and classification, sets pattern to NOT_PRESENT,
+        and stores the original image as-is for record keeping.
+        """
+        # Store original as "enhanced" (no processing applied)
+        original_bytes = image_to_bytes(original_image)
+        original_hash = hashlib.sha256(original_bytes).hexdigest()
+
+        # Store in enhanced path for consistency
+        enhanced_path = await self.storage.store_enhanced(
+            content=original_bytes,
+            fingerprint_id=fingerprint.id,
+            preset=f"{enhancement_preset}_no_fp",
+        )
+
+        # Get config for record keeping
+        config = await self._get_pipeline_config(enhancement_preset)
+
+        # Create processing result record
+        processing_result = FingerprintProcessingResult(
+            fingerprint_id=fingerprint.id,
+            enhanced_storage_path=enhanced_path,
+            enhanced_hash_sha256=original_hash,
+            pipeline_version=self.PIPELINE_VERSION,
+            pipeline_config=config,
+            enhancement_preset=enhancement_preset,
+            model_name="presence_detector",
+            model_version="1.0.0",
+            prompt_version="N/A",
+            prompt_hash="N/A",
+            quality_score_before=quality_result.score,
+            quality_score_after=quality_result.score,  # No improvement (no enhancement)
+            quality_improvement=0.0,
+            processing_time_ms=0,
+            artifact_risk_level="none",
+            artifact_warnings=[],
+            ridge_orientation_map_path=None,
+            rationale_overlay_path=None,
+            is_primary=True,
+        )
+
+        # Mark any existing primary results as non-primary
+        existing_results = await self.db.execute(
+            select(FingerprintProcessingResult).where(
+                FingerprintProcessingResult.fingerprint_id == fingerprint.id,
+                FingerprintProcessingResult.is_primary == True,
+            )
+        )
+        for existing in existing_results.scalars().all():
+            existing.is_primary = False
+
+        self.db.add(processing_result)
+
+        # Update fingerprint classification to NOT_PRESENT
+        fingerprint.evidence_type = EvidenceType.UNKNOWN
+        fingerprint.detail_level = DetailLevel.LEVEL_1
+        fingerprint.pattern_type = PatternType.NOT_PRESENT
+        fingerprint.pattern_subtype = PatternSubtype.NOT_PRESENT
+        fingerprint.pattern_confidence = presence_result.confidence
+        fingerprint.classification_rationale = (
+            f"No fingerprint detected in image. {presence_result.reason} "
+            f"Detection metrics: coherence={presence_result.metrics.get('mean_coherence', 0):.3f}, "
+            f"ridge_coverage={presence_result.ridge_coverage:.3f}, "
+            f"presence_confidence={presence_result.confidence:.3f}"
+        )
+
+        # Set NCIC code to indicate unknown/not present
+        fingerprint.ncic_code = "UP"  # Unknown Pattern
+        fingerprint.henry_value = None
+        fingerprint.ridge_count = None
+
+        # No singular points or minutiae
+        fingerprint.core_count = 0
+        fingerprint.delta_count = 0
+        fingerprint.core_positions = []
+        fingerprint.delta_positions = []
+        fingerprint.minutiae_count = 0
+        fingerprint.minutiae_details = {}
+
+        # No ridge characteristics
+        fingerprint.ridge_flow_direction = None
+        fingerprint.ridge_density = None
+
+        # Update status
+        fingerprint.status = ProcessingStatus.COMPLETED
+        fingerprint.processed_at = datetime.utcnow()
+
+        await self.db.commit()
+
+        logger.info(
+            f"Fingerprint {fingerprint.id} processed as NOT_PRESENT: {presence_result.reason}"
+        )
+
+        return fingerprint

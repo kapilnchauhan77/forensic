@@ -1,6 +1,7 @@
-from pydantic_settings import BaseSettings
-from typing import Optional
 import os
+from typing import Optional
+
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -14,7 +15,9 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
 
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/forensic_db"
+    DATABASE_URL: str = (
+        "postgresql+asyncpg://postgres:postgres@localhost:5432/forensic_db"
+    )
     DATABASE_SYNC_URL: str = "postgresql://postgres:postgres@localhost:5432/forensic_db"
 
     # Redis
@@ -37,8 +40,8 @@ class Settings(BaseSettings):
     USE_LOCAL_STORAGE: bool = True  # Set to False for S3
 
     # Google Gemini
-    GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-1.5-pro"
+    GEMINI_API_KEY: str = "AIzaSyCz0RPdA-k0pl4vkVOyg762XMGXwj7l1hk"
+    GEMINI_MODEL: str = "gemini-2.5-pro"
     GEMINI_IMAGE_MODEL: str = "gemini-3-pro-image-preview"
 
     # Google Cloud (for Vertex AI)

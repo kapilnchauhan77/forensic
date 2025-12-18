@@ -65,13 +65,31 @@ class ClassificationResult:
 class FingerprintClassifier:
     """Gemini VLM-based fingerprint pattern classification with FBI/NCIC standards"""
 
-    PROMPT_VERSION = "3.0.0"
+    PROMPT_VERSION = "3.2.0"  # Emphasized delta count as primary classifier to reduce whorl bias
 
     CLASSIFICATION_PROMPT = """You are a certified forensic fingerprint examiner analyzing a friction ridge impression according to FBI and NCIC standards.
 
-FIRST: Determine if this is actually a fingerprint/friction ridge impression. If NOT a fingerprint (e.g., photograph, unrelated image), respond with pattern_type="unknown", confidence=0.0, and explain in rationale.
+## CRITICAL PRE-SCREENING (MUST DO FIRST)
 
-If this IS a friction ridge impression, perform comprehensive analysis:
+Before ANY analysis, determine if this image contains a GENUINE BIOLOGICAL friction ridge impression from a human finger/palm.
+
+REJECT and return is_fingerprint=false, pattern_type="not_present", confidence=0.0 if ANY of these apply:
+- Digital graphics, illustrations, drawings, or artistic renderings of fingerprints
+- Stock images, icons, or symbols depicting fingerprints
+- Fingerprint graphics overlaid on photographs
+- Computer-generated or synthetic fingerprint patterns
+- Photographs of objects, people, scenes, or anything that is NOT a direct capture of friction ridges
+- Images where no actual biological fingerprint is visible
+- Scans of printed/drawn fingerprints (not genuine impressions)
+
+ONLY PROCEED with classification if:
+- The image shows an ACTUAL biological friction ridge impression
+- The ridges are from a real human finger captured via scanning, photography of a latent print, or similar forensic capture method
+- You can see genuine friction ridge detail (not artistic/stylized patterns)
+
+If rejected, explain in rationale WHY this is not a genuine biological fingerprint (e.g., "Image contains a digital illustration/graphic of a fingerprint, not a genuine biological impression").
+
+If this IS a genuine biological friction ridge impression, perform comprehensive analysis:
 
 ## 1. EVIDENCE TYPE ASSESSMENT
 Determine how this print was deposited:
@@ -80,12 +98,23 @@ Determine how this print was deposited:
 - plastic: 3D impression in soft material (wax, putty, clay, soap)
 
 ## 2. PRIMARY PATTERN CLASSIFICATION (Henry System - Level 1)
-Classify the overall ridge flow pattern:
-- arch: Ridges enter one side and exit the other WITHOUT recurving. NO delta, NO core.
-- loop: Ridges enter from one side, RECURVE around a core, and exit the SAME side. ONE core, ONE delta.
-- whorl: Circular/spiral/complex ridge formations. TWO or more deltas.
+
+**CRITICAL: Classification is determined by DELTA COUNT, not visual appearance!**
+
+Count the deltas FIRST, then classify:
+- 0 deltas → ARCH (ridges flow side to side without recurving)
+- 1 delta → LOOP (ridges recurve around a core, exit same side they entered)
+- 2+ deltas → WHORL (circular/spiral patterns)
+
+Pattern definitions:
+- arch: NO delta (0). Ridges enter one side and exit the other WITHOUT recurving.
+- loop: ONE delta (1). Ridges recurve around ONE core and exit the SAME side.
+- whorl: TWO or more deltas (2+). Circular/spiral formations. MUST have at least 2 deltas.
 - unknown: Cannot determine with forensic confidence.
 - partial: Insufficient ridge area visible for classification.
+
+**WARNING: Do NOT classify as whorl unless you can identify TWO distinct delta formations!**
+A single spiral or circular pattern with only ONE delta is a LOOP (central pocket loop), not a whorl.
 
 ## 3. PATTERN SUBTYPE (FBI Extended Classification)
 
@@ -190,6 +219,114 @@ CONFIDENCE GUIDELINES:
             self.CLASSIFICATION_PROMPT.encode()
         ).hexdigest()[:16]
 
+    def pre_classify_image(self, image: np.ndarray) -> tuple:
+        """
+        Pre-classification to determine if image contains a genuine fingerprint.
+
+        This is a separate VLM call that asks a simple yes/no question before
+        attempting detailed pattern classification. This helps catch cases where
+        the VLM would otherwise hallucinate fingerprint patterns on non-fingerprint images.
+
+        Returns:
+            Tuple of (is_genuine_fingerprint: bool, image_type: str, reason: str)
+        """
+        PRE_CHECK_PROMPT = """Examine this image carefully. Your ONLY task is to determine
+if this image contains a GENUINE BIOLOGICAL fingerprint.
+
+Answer with JSON ONLY:
+{
+    "is_genuine_fingerprint": true or false,
+    "image_type": "biological_fingerprint|photo|illustration|graphic|icon|document|noise|other",
+    "reason": "one sentence explanation"
+}
+
+CLASSIFICATION RULES:
+- "biological_fingerprint" = ACTUAL friction ridge impression from human skin
+  (latent prints, inked prints, scanned prints, crime scene lifts, developed prints)
+
+- "illustration" or "graphic" = Drawn, computer-generated, or artistic fingerprint images
+  (stock images, icons, logos, overlays on photos, digital art, fingerprint graphics)
+
+- "photo" = Photograph of people, objects, scenes, hands (NOT a direct fingerprint capture)
+
+- "document" = Scanned documents, forms, text
+
+- "noise" = Random patterns, blank images, corrupted data
+
+- "other" = Anything else that is NOT a genuine fingerprint
+
+CRITICAL RULES:
+1. When uncertain, answer false - it's better to reject than misclassify
+2. Only say true for ACTUAL biological friction ridge impressions
+3. Fingerprint GRAPHICS/ILLUSTRATIONS overlaid on other images are NOT genuine - answer false
+4. Photos showing hands or fingers are NOT fingerprints unless showing actual ridge detail capture
+"""
+
+        if self.client is None:
+            # No VLM available, assume it could be a fingerprint
+            return (True, "unknown", "VLM not available for pre-classification")
+
+        # Prepare image for API
+        if len(image.shape) == 3:
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = image.copy()
+
+        # Encode image
+        _, buffer = cv2.imencode(".png", gray)
+
+        try:
+            # Build content with image and text
+            contents = [
+                types.Content(
+                    role="user",
+                    parts=[
+                        types.Part.from_bytes(
+                            data=buffer.tobytes(),
+                            mime_type="image/png",
+                        ),
+                        types.Part.from_text(text=PRE_CHECK_PROMPT),
+                    ],
+                ),
+            ]
+
+            # Call Gemini API
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    temperature=0.0,  # Deterministic for yes/no
+                    max_output_tokens=256,
+                ),
+            )
+
+            if not response.text:
+                return (False, "empty_response", "VLM returned empty response - rejecting as precaution")
+
+            # Parse response
+            response_text = response.text.strip()
+
+            # Extract JSON from response
+            if "```json" in response_text:
+                response_text = response_text.split("```json")[1].split("```")[0]
+            elif "```" in response_text:
+                response_text = response_text.split("```")[1].split("```")[0]
+
+            result = json.loads(response_text)
+
+            is_genuine = result.get("is_genuine_fingerprint", False)
+            image_type = result.get("image_type", "unknown")
+            reason = result.get("reason", "No reason provided")
+
+            return (bool(is_genuine), str(image_type), str(reason))
+
+        except json.JSONDecodeError as e:
+            # If we can't parse, be conservative and reject
+            return (False, "parse_error", f"Failed to parse VLM response: {e}")
+        except Exception as e:
+            # On any error, allow through to maintain existing behavior
+            return (True, "error", f"Pre-classification error: {e}")
+
     def classify(
         self,
         image: np.ndarray,
@@ -292,7 +429,7 @@ CONFIDENCE GUIDELINES:
 
             # Validate pattern type (now uses simplified: arch, loop, whorl)
             pattern_type = result_data.get("pattern_type", "unknown").lower()
-            valid_patterns = ["arch", "loop", "whorl", "unknown", "partial"]
+            valid_patterns = ["arch", "loop", "whorl", "unknown", "partial", "not_present"]
             if pattern_type not in valid_patterns:
                 pattern_type = "unknown"
 
@@ -302,7 +439,7 @@ CONFIDENCE GUIDELINES:
                 "plain_arch", "tented_arch",
                 "ulnar_loop", "radial_loop", "central_pocket_loop", "double_loop", "nutant_loop",
                 "plain_whorl", "central_pocket_whorl", "double_loop_whorl", "accidental_whorl", "composite_whorl",
-                "scarred", "amputated", "bandaged", "unknown"
+                "scarred", "amputated", "bandaged", "unknown", "not_present"
             ]
             if pattern_subtype not in valid_subtypes:
                 pattern_subtype = "unknown"
