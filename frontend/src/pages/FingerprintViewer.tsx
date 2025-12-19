@@ -10,6 +10,9 @@ import {
   CheckCircleIcon,
   ArrowsPointingOutIcon,
   ChevronDownIcon,
+  EyeIcon,
+  AdjustmentsHorizontalIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { fingerprintsApi, exhibitsApi, casesApi, exportApi } from '../services/api';
 import type { Fingerprint, Exhibit, Case, ProcessingResult, EnhancementMethod } from '../types';
@@ -184,25 +187,42 @@ export default function FingerprintViewer() {
     setPan({ x: 0, y: 0 });
   };
 
-  const getQualityBadgeClass = (score: number | null) => {
-    if (score === null) return 'quality-badge';
-    if (score >= 70) return 'quality-badge high';
-    if (score >= 40) return 'quality-badge medium';
-    return 'quality-badge low';
+  const getQualityColor = (score: number | null) => {
+    if (score === null) return 'neutral';
+    if (score >= 70) return 'success';
+    if (score >= 40) return 'warning';
+    return 'danger';
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-forensic-600"></div>
+      <div className="animate-fade-in">
+        <div className="skeleton h-4 w-64 mb-4"></div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="lg:col-span-2">
+            <div className="skeleton h-[400px] rounded-2xl"></div>
+          </div>
+          <div className="space-y-4">
+            <div className="skeleton h-32 rounded-2xl"></div>
+            <div className="skeleton h-48 rounded-2xl"></div>
+            <div className="skeleton h-40 rounded-2xl"></div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!fingerprint) {
     return (
-      <div className="text-center py-12">
-        <h3 className="text-lg font-medium text-gray-900">Fingerprint not found</h3>
+      <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+        <ExclamationTriangleIcon className="w-20 h-20 text-amber-500 mb-6" />
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Fingerprint not found</h3>
+        <p className="text-gray-500 dark:text-zinc-400 max-w-sm">
+          The fingerprint you're looking for doesn't exist or has been removed.
+        </p>
+        <Link to="/cases" className="mt-4 py-3 px-5 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-600 hover:via-indigo-700 hover:to-purple-700 shadow-lg shadow-indigo-500/25 transition-all duration-200">
+          Back to Cases
+        </Link>
       </div>
     );
   }
@@ -213,33 +233,36 @@ export default function FingerprintViewer() {
   // Fullscreen viewer
   if (isFullscreen) {
     return (
-      <div className="fixed inset-0 z-50 bg-black">
+      <div className="fixed inset-0 z-50 bg-zinc-950">
         {/* Controls */}
         <div className="absolute top-0 left-0 right-0 z-10 p-4 flex items-center justify-between bg-gradient-to-b from-black/70 to-transparent">
           <button
             onClick={toggleFullscreen}
-            className="p-2 rounded-full bg-black/30 text-white min-h-touch min-w-touch flex items-center justify-center"
+            className="p-3 rounded-xl bg-white/10 backdrop-blur-xl text-white hover:bg-white/20 transition-colors"
           >
-            <ChevronRightIcon className="h-6 w-6 rotate-180" />
+            <XMarkIcon className="h-6 w-6" />
           </button>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2 bg-white/10 backdrop-blur-xl rounded-xl p-1">
             <button
               onClick={() => setZoom(z => Math.max(0.5, z - 0.25))}
-              className="p-2 rounded-full bg-black/30 text-white min-h-touch min-w-touch flex items-center justify-center"
+              className="p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
             >
               <MagnifyingGlassMinusIcon className="h-5 w-5" />
             </button>
-            <span className="text-white text-sm min-w-[50px] text-center">{Math.round(zoom * 100)}%</span>
+            <span className="text-white text-sm font-medium min-w-[60px] text-center">
+              {Math.round(zoom * 100)}%
+            </span>
             <button
               onClick={() => setZoom(z => Math.min(4, z + 0.25))}
-              className="p-2 rounded-full bg-black/30 text-white min-h-touch min-w-touch flex items-center justify-center"
+              className="p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
             >
               <MagnifyingGlassPlusIcon className="h-5 w-5" />
             </button>
+            <div className="w-px h-6 bg-white/20" />
             <button
               onClick={resetView}
-              className="p-2 rounded-full bg-black/30 text-white min-h-touch min-w-touch flex items-center justify-center"
+              className="p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
             >
               <ArrowPathIcon className="h-5 w-5" />
             </button>
@@ -269,17 +292,25 @@ export default function FingerprintViewer() {
 
         {/* Bottom view mode toggle */}
         <div className="absolute bottom-0 left-0 right-0 z-10 p-4 pb-safe-bottom flex justify-center bg-gradient-to-t from-black/70 to-transparent">
-          <div className="flex items-center space-x-2 bg-black/50 rounded-full p-1">
+          <div className="flex items-center gap-1 bg-white/10 backdrop-blur-xl rounded-xl p-1">
             <button
               onClick={() => setViewMode('original')}
-              className={`px-4 py-2 text-sm rounded-full transition-colors ${viewMode === 'original' ? 'bg-white text-black' : 'text-white'}`}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                viewMode === 'original'
+                  ? 'bg-white text-zinc-900'
+                  : 'text-white hover:bg-white/10'
+              }`}
             >
               Original
             </button>
             {enhancedUrl && (
               <button
                 onClick={() => setViewMode('enhanced')}
-                className={`px-4 py-2 text-sm rounded-full transition-colors ${viewMode === 'enhanced' ? 'bg-white text-black' : 'text-white'}`}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                  viewMode === 'enhanced'
+                    ? 'bg-white text-zinc-900'
+                    : 'text-white hover:bg-white/10'
+                }`}
               >
                 Enhanced
               </button>
@@ -291,131 +322,129 @@ export default function FingerprintViewer() {
   }
 
   return (
-    <div className="h-full">
-      {/* Breadcrumb - Responsive */}
+    <div className="animate-fade-in">
+      {/* Breadcrumb */}
       <nav className="flex mb-4 overflow-x-auto scrollbar-hide" aria-label="Breadcrumb">
-        <ol className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm whitespace-nowrap">
+        <ol className="flex items-center gap-1.5 text-sm whitespace-nowrap">
           <li>
-            <Link to="/cases" className="text-gray-400 hover:text-gray-500">Cases</Link>
+            <Link to="/cases" className="text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 transition-colors">
+              Cases
+            </Link>
           </li>
-          <ChevronRightIcon className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+          <ChevronRightIcon className="h-4 w-4 text-gray-400 dark:text-zinc-500 flex-shrink-0" />
           <li>
-            <Link to={`/cases/${caseData?.id}`} className="text-gray-400 hover:text-gray-500 truncate max-w-[80px] sm:max-w-none">
+            <Link to={`/cases/${caseData?.id}`} className="text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 transition-colors truncate max-w-[100px]">
               {caseData?.case_number}
             </Link>
           </li>
-          <ChevronRightIcon className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+          <ChevronRightIcon className="h-4 w-4 text-gray-400 dark:text-zinc-500 flex-shrink-0" />
           <li>
-            <Link to={`/exhibits/${exhibit?.id}`} className="text-gray-400 hover:text-gray-500 truncate max-w-[80px] sm:max-w-none">
+            <Link to={`/exhibits/${exhibit?.id}`} className="text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 transition-colors truncate max-w-[100px]">
               {exhibit?.exhibit_number}
             </Link>
           </li>
-          <ChevronRightIcon className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
-          <li className="font-medium text-gray-500 truncate max-w-[100px] sm:max-w-none">{fingerprint.original_filename}</li>
+          <ChevronRightIcon className="h-4 w-4 text-gray-400 dark:text-zinc-500 flex-shrink-0" />
+          <li className="font-medium text-gray-700 dark:text-zinc-200 truncate max-w-[120px]">
+            {fingerprint.original_filename}
+          </li>
         </ol>
       </nav>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Main Viewer */}
         <div className="lg:col-span-2">
-          <div className="bg-white shadow rounded-lg overflow-hidden">
-            {/* Toolbar - Mobile optimized */}
-            <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-200">
-              {/* Mobile: Compact toolbar */}
-              <div className="flex sm:hidden items-center justify-between">
-                <div className="flex items-center space-x-1 overflow-x-auto scrollbar-hide">
+          <div className="card overflow-hidden">
+            {/* Toolbar */}
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-zinc-800">
+              <div className="flex items-center justify-between">
+                {/* View mode buttons */}
+                <div className="flex items-center gap-1 bg-gray-100 dark:bg-zinc-800 rounded-xl p-1">
                   <button
                     onClick={() => setViewMode('original')}
-                    className={`px-2.5 py-1.5 text-xs rounded-lg whitespace-nowrap ${viewMode === 'original' ? 'bg-forensic-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                      viewMode === 'original'
+                        ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-zinc-900 dark:hover:text-gray-200'
+                    }`}
                   >
+                    <EyeIcon className="h-4 w-4 inline mr-1.5" />
                     Original
                   </button>
                   <button
                     onClick={() => setViewMode('enhanced')}
                     disabled={!enhancedUrl}
-                    className={`px-2.5 py-1.5 text-xs rounded-lg whitespace-nowrap ${viewMode === 'enhanced' ? 'bg-forensic-600 text-white' : 'bg-gray-100 text-gray-700'} disabled:opacity-50`}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                      viewMode === 'enhanced'
+                        ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-zinc-900 dark:hover:text-gray-200'
+                    }`}
                   >
+                    <AdjustmentsHorizontalIcon className="h-4 w-4 inline mr-1.5" />
                     Enhanced
                   </button>
                   <button
                     onClick={() => setViewMode('comparison')}
                     disabled={!enhancedUrl}
-                    className={`px-2.5 py-1.5 text-xs rounded-lg whitespace-nowrap ${viewMode === 'comparison' ? 'bg-forensic-600 text-white' : 'bg-gray-100 text-gray-700'} disabled:opacity-50`}
-                  >
-                    Compare
-                  </button>
-                </div>
-                <button
-                  onClick={toggleFullscreen}
-                  className="p-2 rounded-lg bg-gray-100 text-gray-700 ml-2"
-                >
-                  <ArrowsPointingOutIcon className="h-5 w-5" />
-                </button>
-              </div>
-
-              {/* Desktop: Full toolbar */}
-              <div className="hidden sm:flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setViewMode('original')}
-                    className={`px-3 py-1 text-sm rounded ${viewMode === 'original' ? 'bg-forensic-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                  >
-                    Original
-                  </button>
-                  <button
-                    onClick={() => setViewMode('enhanced')}
-                    disabled={!enhancedUrl}
-                    className={`px-3 py-1 text-sm rounded ${viewMode === 'enhanced' ? 'bg-forensic-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} disabled:opacity-50`}
-                  >
-                    Enhanced
-                  </button>
-                  <button
-                    onClick={() => setViewMode('comparison')}
-                    disabled={!enhancedUrl}
-                    className={`px-3 py-1 text-sm rounded ${viewMode === 'comparison' ? 'bg-forensic-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} disabled:opacity-50`}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                      viewMode === 'comparison'
+                        ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-zinc-900 dark:hover:text-gray-200'
+                    }`}
                   >
                     Compare
                   </button>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                {/* Zoom controls */}
+                <div className="hidden sm:flex items-center gap-1">
                   <button
                     onClick={() => setZoom(z => Math.max(0.25, z - 0.25))}
-                    className="p-1 rounded hover:bg-gray-100"
+                    className="p-2 rounded-lg text-white0 hover:text-zinc-900 hover:bg-gray-100 dark:hover:text-gray-100 dark:hover:bg-zinc-800 transition-colors"
                     title="Zoom out"
                   >
-                    <MagnifyingGlassMinusIcon className="h-5 w-5 text-gray-500" />
+                    <MagnifyingGlassMinusIcon className="h-5 w-5" />
                   </button>
-                  <span className="text-sm text-gray-500 min-w-[50px] text-center">{Math.round(zoom * 100)}%</span>
+                  <span className="text-sm text-white0 dark:text-gray-400 min-w-[50px] text-center font-medium">
+                    {Math.round(zoom * 100)}%
+                  </span>
                   <button
                     onClick={() => setZoom(z => Math.min(4, z + 0.25))}
-                    className="p-1 rounded hover:bg-gray-100"
+                    className="p-2 rounded-lg text-white0 hover:text-zinc-900 hover:bg-gray-100 dark:hover:text-gray-100 dark:hover:bg-zinc-800 transition-colors"
                     title="Zoom in"
                   >
-                    <MagnifyingGlassPlusIcon className="h-5 w-5 text-gray-500" />
+                    <MagnifyingGlassPlusIcon className="h-5 w-5" />
                   </button>
+                  <div className="w-px h-5 bg-gray-200 dark:bg-zinc-700 mx-1" />
                   <button
                     onClick={resetView}
-                    className="p-1 rounded hover:bg-gray-100"
+                    className="p-2 rounded-lg text-white0 hover:text-zinc-900 hover:bg-gray-100 dark:hover:text-gray-100 dark:hover:bg-zinc-800 transition-colors"
                     title="Reset zoom"
                   >
-                    <ArrowPathIcon className="h-5 w-5 text-gray-500" />
+                    <ArrowPathIcon className="h-5 w-5" />
                   </button>
                   <button
                     onClick={toggleFullscreen}
-                    className="p-1 rounded hover:bg-gray-100"
+                    className="p-2 rounded-lg text-white0 hover:text-zinc-900 hover:bg-gray-100 dark:hover:text-gray-100 dark:hover:bg-zinc-800 transition-colors"
                     title="Fullscreen"
                   >
-                    <ArrowsPointingOutIcon className="h-5 w-5 text-gray-500" />
+                    <ArrowsPointingOutIcon className="h-5 w-5" />
                   </button>
                 </div>
+
+                {/* Mobile fullscreen button */}
+                <button
+                  onClick={toggleFullscreen}
+                  className="sm:hidden p-2 rounded-lg bg-gray-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
+                >
+                  <ArrowsPointingOutIcon className="h-5 w-5" />
+                </button>
               </div>
             </div>
 
             {/* Image Viewer */}
             <div
               ref={containerRef}
-              className="relative bg-gray-900 overflow-hidden"
+              className="relative bg-zinc-950 overflow-hidden"
               style={{ height: 'clamp(300px, 50vh, 500px)' }}
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
@@ -433,7 +462,7 @@ export default function FingerprintViewer() {
                       draggable={false}
                     />
                   </div>
-                  {/* Original image (clipped) - use clip-path for proper sizing */}
+                  {/* Original image (clipped) */}
                   <div
                     className="absolute inset-0 flex items-center justify-center"
                     style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
@@ -448,7 +477,7 @@ export default function FingerprintViewer() {
                   </div>
                   {/* Slider */}
                   <div
-                    className="absolute top-0 bottom-0 w-1 bg-white cursor-ew-resize shadow-lg"
+                    className="absolute top-0 bottom-0 w-0.5 bg-white cursor-ew-resize shadow-lg"
                     style={{ left: `${sliderPosition}%` }}
                     onMouseDown={() => {
                       const container = containerRef.current;
@@ -471,18 +500,18 @@ export default function FingerprintViewer() {
                     }}
                     onTouchMove={handleSliderTouch}
                   >
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow">
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-2 shadow-lg">
                       <div className="flex space-x-0.5">
-                        <div className="w-0.5 h-5 bg-gray-400 rounded"></div>
-                        <div className="w-0.5 h-5 bg-gray-400 rounded"></div>
+                        <div className="w-0.5 h-4 bg-gray-400 rounded"></div>
+                        <div className="w-0.5 h-4 bg-gray-400 rounded"></div>
                       </div>
                     </div>
                   </div>
                   {/* Labels */}
-                  <div className="absolute top-3 left-3 px-2 py-1 bg-black/50 text-white text-xs rounded">
+                  <div className="absolute top-3 left-3 px-2.5 py-1 bg-black/60 backdrop-blur-sm text-white text-xs font-medium rounded-lg">
                     Original
                   </div>
-                  <div className="absolute top-3 right-3 px-2 py-1 bg-black/50 text-white text-xs rounded">
+                  <div className="absolute top-3 right-3 px-2.5 py-1 bg-black/60 backdrop-blur-sm text-white text-xs font-medium rounded-lg">
                     Enhanced
                   </div>
                 </div>
@@ -502,7 +531,7 @@ export default function FingerprintViewer() {
 
               {/* Mobile hint */}
               <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 sm:hidden">
-                <span className="px-2 py-1 bg-black/50 text-white text-xs rounded">
+                <span className="px-3 py-1.5 bg-black/60 backdrop-blur-sm text-white text-xs font-medium rounded-lg">
                   Pinch to zoom
                 </span>
               </div>
@@ -510,49 +539,47 @@ export default function FingerprintViewer() {
           </div>
         </div>
 
-        {/* Details Panel - Collapsible on mobile */}
-        <div className="space-y-4 sm:space-y-6">
+        {/* Details Panel */}
+        <div className="space-y-4">
           {/* Mobile: Collapsible trigger */}
           <button
-            className="w-full lg:hidden flex items-center justify-between p-4 bg-white shadow rounded-lg"
+            className="w-full lg:hidden flex items-center justify-between p-4 card"
             onClick={() => setShowDetails(!showDetails)}
           >
-            <span className="font-medium text-gray-900">Details & Classification</span>
-            <ChevronDownIcon className={`h-5 w-5 text-gray-500 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
+            <span className="font-semibold text-zinc-900 dark:text-white">Details & Classification</span>
+            <ChevronDownIcon className={`h-5 w-5 text-white0 transition-transform duration-200 ${showDetails ? 'rotate-180' : ''}`} />
           </button>
 
-          <div className={`space-y-4 sm:space-y-6 ${showDetails ? 'block' : 'hidden lg:block'}`}>
+          <div className={`space-y-4 ${showDetails ? 'block' : 'hidden lg:block'}`}>
             {/* Status & Actions */}
-            <div className="bg-white shadow rounded-lg p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div className="card p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <span className={`status-badge ${fingerprint.status}`}>
                   {fingerprint.status}
                 </span>
-                <div className="flex space-x-2">
+                <div className="flex gap-2">
                   <button
                     onClick={() => setShowReprocessModal(true)}
-                    className="inline-flex items-center px-3 py-1.5 text-xs rounded-lg bg-gray-100 hover:bg-gray-200 active:bg-gray-300 min-h-touch"
-                    title="Reprocess"
+                    className="btn-secondary text-sm flex items-center gap-1.5"
                   >
-                    <ArrowPathIcon className="h-4 w-4 mr-1" />
+                    <ArrowPathIcon className="h-4 w-4" />
                     Reprocess
                   </button>
                   <button
                     onClick={handleDownloadReport}
-                    className="inline-flex items-center px-3 py-1.5 text-xs rounded-lg bg-gray-100 hover:bg-gray-200 active:bg-gray-300 min-h-touch"
-                    title="Download Report"
+                    className="btn-secondary text-sm flex items-center gap-1.5"
                   >
-                    <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
+                    <ArrowDownTrayIcon className="h-4 w-4" />
                     Report
                   </button>
                 </div>
               </div>
 
               {fingerprint.processing_error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                  <div className="flex">
-                    <ExclamationTriangleIcon className="h-5 w-5 text-red-400 flex-shrink-0" />
-                    <p className="ml-2 text-sm text-red-700">{fingerprint.processing_error}</p>
+                <div className="p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl">
+                  <div className="flex gap-2">
+                    <ExclamationTriangleIcon className="h-5 w-5 text-rose-500 flex-shrink-0" />
+                    <p className="text-sm text-rose-700 dark:text-rose-300">{fingerprint.processing_error}</p>
                   </div>
                 </div>
               )}
@@ -560,62 +587,62 @@ export default function FingerprintViewer() {
 
             {/* Classification */}
             {fingerprint.pattern_type && (
-              <div className="bg-white shadow rounded-lg p-4">
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Classification</h3>
+              <div className="card p-4">
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-white mb-3">Classification</h3>
                 <div className="space-y-3">
                   {/* Evidence Type & Detail Level badges */}
                   <div className="flex flex-wrap gap-2">
                     {fingerprint.evidence_type && fingerprint.evidence_type.toLowerCase() !== 'unknown' && (
-                      <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-                        fingerprint.evidence_type.toLowerCase() === 'latent' ? 'bg-blue-100 text-blue-800' :
-                        fingerprint.evidence_type.toLowerCase() === 'patent' ? 'bg-amber-100 text-amber-800' :
-                        fingerprint.evidence_type.toLowerCase() === 'plastic' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
+                      <span className={`badge ${
+                        fingerprint.evidence_type.toLowerCase() === 'latent' ? 'badge-primary' :
+                        fingerprint.evidence_type.toLowerCase() === 'patent' ? 'badge-warning' :
+                        fingerprint.evidence_type.toLowerCase() === 'plastic' ? 'badge-success' :
+                        'badge-neutral'
                       }`}>
                         {fingerprint.evidence_type.charAt(0).toUpperCase() + fingerprint.evidence_type.slice(1).toLowerCase()} Print
                       </span>
                     )}
                     {fingerprint.detail_level && (
-                      <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-                        fingerprint.detail_level.toLowerCase() === 'level_3' ? 'bg-green-100 text-green-800' :
-                        fingerprint.detail_level.toLowerCase() === 'level_2' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
+                      <span className={`badge ${
+                        fingerprint.detail_level.toLowerCase() === 'level_3' ? 'badge-success' :
+                        fingerprint.detail_level.toLowerCase() === 'level_2' ? 'badge-warning' :
+                        'badge-neutral'
                       }`}>
-                        {fingerprint.detail_level.toLowerCase() === 'level_1' ? 'Level 1 (Ridge Flow)' :
-                         fingerprint.detail_level.toLowerCase() === 'level_2' ? 'Level 2 (Minutiae)' :
-                         'Level 3 (Fine Detail)'}
+                        {fingerprint.detail_level.toLowerCase() === 'level_1' ? 'Level 1' :
+                         fingerprint.detail_level.toLowerCase() === 'level_2' ? 'Level 2' :
+                         'Level 3'}
                       </span>
                     )}
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
                       <span className="pattern-badge capitalize">
                         {fingerprint.pattern_type.replace('_', ' ')}
                       </span>
                       {fingerprint.pattern_subtype && fingerprint.pattern_subtype !== 'unknown' && (
-                        <span className="text-xs text-gray-600 capitalize">
+                        <span className="text-xs text-white0 dark:text-gray-400 capitalize">
                           {fingerprint.pattern_subtype.replace(/_/g, ' ')}
                         </span>
                       )}
                     </div>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm font-medium text-white0 dark:text-gray-400">
                       {fingerprint.pattern_confidence
-                        ? `${(fingerprint.pattern_confidence * 100).toFixed(0)}% confidence`
+                        ? `${(fingerprint.pattern_confidence * 100).toFixed(0)}%`
                         : ''}
                     </span>
                   </div>
 
                   {/* FBI/NCIC Codes */}
                   {(fingerprint.ncic_code || fingerprint.henry_value !== null) && (
-                    <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
+                    <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-200 dark:border-zinc-700">
                       {fingerprint.ncic_code && (
-                        <span className="inline-flex items-center px-2 py-1 text-xs font-mono bg-gray-100 text-gray-800 rounded">
+                        <span className="inline-flex items-center px-2.5 py-1 text-xs font-mono bg-gray-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg">
                           NCIC: {fingerprint.ncic_code}
                         </span>
                       )}
                       {fingerprint.henry_value !== null && (
-                        <span className="inline-flex items-center px-2 py-1 text-xs font-mono bg-gray-100 text-gray-800 rounded">
+                        <span className="inline-flex items-center px-2.5 py-1 text-xs font-mono bg-gray-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg">
                           Henry: {fingerprint.henry_value}
                         </span>
                       )}
@@ -624,94 +651,20 @@ export default function FingerprintViewer() {
 
                   {/* Singular Points */}
                   {(fingerprint.core_count !== null || fingerprint.delta_count !== null) && (
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-lg font-semibold text-gray-900">{fingerprint.core_count ?? 0}</div>
-                        <div className="text-xs text-gray-500">Core{fingerprint.core_count !== 1 ? 's' : ''}</div>
+                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-200 dark:border-zinc-700">
+                      <div className="text-center p-3 bg-white dark:bg-zinc-800 rounded-xl">
+                        <div className="text-2xl font-bold text-zinc-900 dark:text-white">{fingerprint.core_count ?? 0}</div>
+                        <div className="text-xs text-white0 dark:text-gray-400">Core{fingerprint.core_count !== 1 ? 's' : ''}</div>
                       </div>
-                      <div className="text-center p-2 bg-gray-50 rounded">
-                        <div className="text-lg font-semibold text-gray-900">{fingerprint.delta_count ?? 0}</div>
-                        <div className="text-xs text-gray-500">Delta{fingerprint.delta_count !== 1 ? 's' : ''}</div>
+                      <div className="text-center p-3 bg-white dark:bg-zinc-800 rounded-xl">
+                        <div className="text-2xl font-bold text-zinc-900 dark:text-white">{fingerprint.delta_count ?? 0}</div>
+                        <div className="text-xs text-white0 dark:text-gray-400">Delta{fingerprint.delta_count !== 1 ? 's' : ''}</div>
                       </div>
-                    </div>
-                  )}
-
-                  {/* Ridge Count & Flow */}
-                  {(fingerprint.ridge_count !== null || fingerprint.ridge_flow_direction) && (
-                    <dl className="space-y-1 pt-2 border-t border-gray-100 text-sm">
-                      {fingerprint.ridge_count !== null && (
-                        <div className="flex justify-between">
-                          <dt className="text-gray-500">Ridge Count</dt>
-                          <dd className="text-gray-900 font-medium">{fingerprint.ridge_count}</dd>
-                        </div>
-                      )}
-                      {fingerprint.ridge_flow_direction && (
-                        <div className="flex justify-between">
-                          <dt className="text-gray-500">Ridge Flow</dt>
-                          <dd className="text-gray-900 capitalize">{fingerprint.ridge_flow_direction.replace(/_/g, ' ')}</dd>
-                        </div>
-                      )}
-                      {fingerprint.ridge_density !== null && (
-                        <div className="flex justify-between">
-                          <dt className="text-gray-500">Ridge Density</dt>
-                          <dd className="text-gray-900">{fingerprint.ridge_density.toFixed(2)} ridges/mm</dd>
-                        </div>
-                      )}
-                    </dl>
-                  )}
-
-                  {/* Minutiae Summary */}
-                  {fingerprint.minutiae_count !== null && (
-                    <div className="pt-2 border-t border-gray-100">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-gray-500">Minutiae Count</span>
-                        <span className="text-sm font-semibold text-gray-900">{fingerprint.minutiae_count}</span>
-                      </div>
-                      {fingerprint.minutiae_details && (
-                        <div className="grid grid-cols-3 gap-1 text-xs">
-                          {fingerprint.minutiae_details.ridge_endings > 0 && (
-                            <div className="text-center p-1 bg-blue-50 rounded">
-                              <div className="font-medium text-blue-900">{fingerprint.minutiae_details.ridge_endings}</div>
-                              <div className="text-blue-600">Endings</div>
-                            </div>
-                          )}
-                          {fingerprint.minutiae_details.bifurcations > 0 && (
-                            <div className="text-center p-1 bg-green-50 rounded">
-                              <div className="font-medium text-green-900">{fingerprint.minutiae_details.bifurcations}</div>
-                              <div className="text-green-600">Bifurc.</div>
-                            </div>
-                          )}
-                          {fingerprint.minutiae_details.short_ridges > 0 && (
-                            <div className="text-center p-1 bg-yellow-50 rounded">
-                              <div className="font-medium text-yellow-900">{fingerprint.minutiae_details.short_ridges}</div>
-                              <div className="text-yellow-600">Short</div>
-                            </div>
-                          )}
-                          {fingerprint.minutiae_details.dots > 0 && (
-                            <div className="text-center p-1 bg-purple-50 rounded">
-                              <div className="font-medium text-purple-900">{fingerprint.minutiae_details.dots}</div>
-                              <div className="text-purple-600">Dots</div>
-                            </div>
-                          )}
-                          {fingerprint.minutiae_details.islands > 0 && (
-                            <div className="text-center p-1 bg-pink-50 rounded">
-                              <div className="font-medium text-pink-900">{fingerprint.minutiae_details.islands}</div>
-                              <div className="text-pink-600">Islands</div>
-                            </div>
-                          )}
-                          {fingerprint.minutiae_details.other > 0 && (
-                            <div className="text-center p-1 bg-gray-50 rounded">
-                              <div className="font-medium text-gray-900">{fingerprint.minutiae_details.other}</div>
-                              <div className="text-gray-600">Other</div>
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </div>
                   )}
 
                   {fingerprint.classification_rationale && (
-                    <p className="text-sm text-gray-600 border-l-2 border-forensic-200 pl-3 pt-2">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 border-l-2 border-cyan-400 pl-3 pt-3">
                       {fingerprint.classification_rationale}
                     </p>
                   )}
@@ -720,36 +673,33 @@ export default function FingerprintViewer() {
             )}
 
             {/* Quality */}
-            <div className="bg-white shadow rounded-lg p-4">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">Quality Assessment</h3>
+            <div className="card p-4">
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-white mb-3">Quality Assessment</h3>
               {fingerprint.quality_score !== null ? (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className={getQualityBadgeClass(fingerprint.quality_score)}>
+                    <span className={`quality-badge ${getQualityColor(fingerprint.quality_score) === 'success' ? 'high' : getQualityColor(fingerprint.quality_score) === 'warning' ? 'medium' : 'low'}`}>
                       Score: {fingerprint.quality_score.toFixed(0)}/100
                     </span>
                   </div>
 
                   {/* Quality bar */}
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="progress-bar">
                     <div
-                      className={`h-2 rounded-full transition-all ${
-                        fingerprint.quality_score >= 70 ? 'bg-green-500' :
-                        fingerprint.quality_score >= 40 ? 'bg-yellow-500' : 'bg-red-500'
-                      }`}
+                      className={`progress-fill progress-fill-${getQualityColor(fingerprint.quality_score)}`}
                       style={{ width: `${fingerprint.quality_score}%` }}
                     />
                   </div>
 
                   {fingerprint.quality_issues && fingerprint.quality_issues.length > 0 && (
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       {fingerprint.quality_issues.map((issue, idx) => (
                         <div
                           key={idx}
-                          className={`text-xs p-2 rounded ${
-                            issue.severity === 'high' ? 'bg-red-50 text-red-700' :
-                            issue.severity === 'medium' ? 'bg-yellow-50 text-yellow-700' :
-                            'bg-gray-50 text-gray-700'
+                          className={`text-xs p-2.5 rounded-lg ${
+                            issue.severity === 'high' ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300' :
+                            issue.severity === 'medium' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300' :
+                            'bg-gray-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
                           }`}
                         >
                           {issue.description}
@@ -759,56 +709,52 @@ export default function FingerprintViewer() {
                   )}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">Not assessed yet</p>
+                <p className="text-sm text-white0 dark:text-gray-400">Not assessed yet</p>
               )}
             </div>
 
             {/* Enhancement Results */}
             {fingerprint.processing_results && fingerprint.processing_results.length > 0 && (
-              <div className="bg-white shadow rounded-lg p-4">
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Enhancement Results</h3>
+              <div className="card p-4">
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-white mb-3">Enhancement Results</h3>
                 <div className="space-y-2">
                   {fingerprint.processing_results.map((result) => (
                     <button
                       key={result.id}
                       onClick={() => setSelectedResult(result)}
-                      className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                      className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
                         selectedResult?.id === result.id
-                          ? 'border-forensic-500 bg-forensic-50'
-                          : 'border-gray-200 hover:border-gray-300 active:bg-gray-50'
+                          ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20'
+                          : 'border-gray-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-gray-600'
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium capitalize">
+                          <span className="text-sm font-medium text-zinc-900 dark:text-white capitalize">
                             {result.enhancement_preset.replace('_', ' ')}
                           </span>
                           {result.enhancement_method === 'gemini' && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                              AI
-                            </span>
+                            <span className="badge badge-primary text-xs">AI</span>
                           )}
                           {result.enhancement_method === 'opencv' && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                              OpenCV
-                            </span>
+                            <span className="badge badge-neutral text-xs">OpenCV</span>
                           )}
                         </div>
                         {result.is_primary && (
-                          <CheckCircleIcon className="h-4 w-4 text-green-500" />
+                          <CheckCircleIcon className="h-5 w-5 text-emerald-500" />
                         )}
                       </div>
-                      <div className="mt-1 flex flex-wrap items-center text-xs text-gray-500 gap-2">
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
                         {result.quality_improvement !== null && (
-                          <span className={result.quality_improvement >= 0 ? 'text-green-600' : 'text-red-600'}>
+                          <span className={result.quality_improvement >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
                             {result.quality_improvement >= 0 ? '+' : ''}{result.quality_improvement.toFixed(1)} quality
                           </span>
                         )}
                         {result.artifact_risk_level && (
                           <span className={`
-                            ${result.artifact_risk_level === 'high' ? 'text-red-600' : ''}
-                            ${result.artifact_risk_level === 'medium' ? 'text-yellow-600' : ''}
-                            ${result.artifact_risk_level === 'low' ? 'text-green-600' : ''}
+                            ${result.artifact_risk_level === 'high' ? 'text-rose-600 dark:text-rose-400' : ''}
+                            ${result.artifact_risk_level === 'medium' ? 'text-amber-600 dark:text-amber-400' : ''}
+                            ${result.artifact_risk_level === 'low' ? 'text-emerald-600 dark:text-emerald-400' : ''}
                           `}>
                             {result.artifact_risk_level} risk
                           </span>
@@ -821,58 +767,42 @@ export default function FingerprintViewer() {
             )}
 
             {/* File Info */}
-            <div className="bg-white shadow rounded-lg p-4">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">File Information</h3>
-              <dl className="space-y-2 text-sm">
+            <div className="card p-4">
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-white mb-3">File Information</h3>
+              <dl className="space-y-2.5 text-sm">
                 <div className="flex justify-between">
-                  <dt className="text-gray-500">Filename</dt>
-                  <dd className="text-gray-900 truncate max-w-[150px] sm:max-w-[200px]" title={fingerprint.original_filename}>
+                  <dt className="text-white0 dark:text-gray-400">Filename</dt>
+                  <dd className="text-zinc-900 dark:text-white truncate max-w-[160px] font-medium" title={fingerprint.original_filename}>
                     {fingerprint.original_filename}
                   </dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-gray-500">Dimensions</dt>
-                  <dd className="text-gray-900">
+                  <dt className="text-white0 dark:text-gray-400">Dimensions</dt>
+                  <dd className="text-zinc-900 dark:text-white">
                     {fingerprint.image_width}x{fingerprint.image_height}
                   </dd>
                 </div>
                 {fingerprint.dpi && (
                   <div className="flex justify-between">
-                    <dt className="text-gray-500">DPI</dt>
-                    <dd className="text-gray-900">{fingerprint.dpi}</dd>
+                    <dt className="text-white0 dark:text-gray-400">DPI</dt>
+                    <dd className="text-zinc-900 dark:text-white">{fingerprint.dpi}</dd>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <dt className="text-gray-500">Size</dt>
-                  <dd className="text-gray-900">
+                  <dt className="text-white0 dark:text-gray-400">Size</dt>
+                  <dd className="text-zinc-900 dark:text-white">
                     {(fingerprint.file_size_bytes / 1024).toFixed(1)} KB
                   </dd>
                 </div>
-                {fingerprint.evidence_type && fingerprint.evidence_type.toLowerCase() !== 'unknown' && (
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">Evidence Type</dt>
-                    <dd className="text-gray-900 capitalize">
-                      {fingerprint.evidence_type.toLowerCase()}
-                    </dd>
-                  </div>
-                )}
                 <div className="flex justify-between">
-                  <dt className="text-gray-500">Print Type</dt>
-                  <dd className="text-gray-900 capitalize">
+                  <dt className="text-white0 dark:text-gray-400">Print Type</dt>
+                  <dd className="text-zinc-900 dark:text-white capitalize">
                     {fingerprint.print_type.replace('_', ' ')}
                   </dd>
                 </div>
-                {fingerprint.finger_position && fingerprint.finger_position !== 'unknown' && (
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">Finger Position</dt>
-                    <dd className="text-gray-900 capitalize">
-                      {fingerprint.finger_position.replace(/_/g, ' ')}
-                    </dd>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <dt className="text-gray-500">SHA-256</dt>
-                  <dd className="text-gray-900 font-mono text-xs truncate max-w-[150px] sm:max-w-[200px]" title={fingerprint.original_hash_sha256}>
+                <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-zinc-700">
+                  <dt className="text-white0 dark:text-gray-400">SHA-256</dt>
+                  <dd className="text-zinc-700 dark:text-zinc-300 font-mono text-xs truncate max-w-[140px]" title={fingerprint.original_hash_sha256}>
                     {fingerprint.original_hash_sha256.substring(0, 16)}...
                   </dd>
                 </div>
@@ -886,87 +816,67 @@ export default function FingerprintViewer() {
       {showReprocessModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setShowReprocessModal(false)} />
+            <div className="fixed inset-0 bg-zinc-900/75 backdrop-blur-sm transition-opacity" onClick={() => setShowReprocessModal(false)} />
 
-            <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
-              <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                <div className="sm:flex sm:items-start">
-                  <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-forensic-100 sm:mx-0 sm:h-10 sm:w-10">
-                    <ArrowPathIcon className="h-6 w-6 text-forensic-600" />
+            <div className="relative transform overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 text-left shadow-elevated transition-all sm:my-8 sm:w-full sm:max-w-lg">
+              <div className="p-6">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="p-3 rounded-xl bg-cyan-100 dark:bg-cyan-900/50">
+                    <ArrowPathIcon className="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
                   </div>
-                  <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left flex-1">
-                    <h3 className="text-base font-semibold leading-6 text-gray-900">
+                  <div>
+                    <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">
                       Reprocess Fingerprint
                     </h3>
-                    <div className="mt-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Enhancement Method
-                      </label>
-                      <div className="space-y-2">
-                        <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                          <input
-                            type="radio"
-                            name="enhancementMethod"
-                            value="auto"
-                            checked={selectedEnhancementMethod === 'auto'}
-                            onChange={() => setSelectedEnhancementMethod('auto')}
-                            className="mt-1 h-4 w-4 text-forensic-600 focus:ring-forensic-500"
-                          />
-                          <div className="ml-3">
-                            <span className="block text-sm font-medium text-gray-900">Auto (Recommended)</span>
-                            <span className="block text-xs text-gray-500">Uses AI enhancement when available, falls back to traditional methods</span>
-                          </div>
-                        </label>
-
-                        <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                          <input
-                            type="radio"
-                            name="enhancementMethod"
-                            value="gemini"
-                            checked={selectedEnhancementMethod === 'gemini'}
-                            onChange={() => setSelectedEnhancementMethod('gemini')}
-                            className="mt-1 h-4 w-4 text-forensic-600 focus:ring-forensic-500"
-                          />
-                          <div className="ml-3">
-                            <span className="block text-sm font-medium text-gray-900">
-                              AI Enhancement (Gemini)
-                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                                AI
-                              </span>
-                            </span>
-                            <span className="block text-xs text-gray-500">Advanced AI-powered reconstruction for smudged or damaged prints</span>
-                          </div>
-                        </label>
-
-                        <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                          <input
-                            type="radio"
-                            name="enhancementMethod"
-                            value="opencv"
-                            checked={selectedEnhancementMethod === 'opencv'}
-                            onChange={() => setSelectedEnhancementMethod('opencv')}
-                            className="mt-1 h-4 w-4 text-forensic-600 focus:ring-forensic-500"
-                          />
-                          <div className="ml-3">
-                            <span className="block text-sm font-medium text-gray-900">Traditional (OpenCV)</span>
-                            <span className="block text-xs text-gray-500">Classic image processing algorithms (Gabor filters, CLAHE)</span>
-                          </div>
-                        </label>
-                      </div>
-                    </div>
+                    <p className="text-sm text-white0 dark:text-gray-400">
+                      Choose an enhancement method
+                    </p>
                   </div>
                 </div>
+
+                <div className="space-y-3">
+                  {[
+                    { id: 'auto', name: 'Auto (Recommended)', desc: 'AI when available, traditional fallback' },
+                    { id: 'gemini', name: 'AI Enhancement', desc: 'Advanced AI reconstruction', badge: 'AI' },
+                    { id: 'opencv', name: 'Traditional', desc: 'Classic Gabor filters & CLAHE' },
+                  ].map((method) => (
+                    <label
+                      key={method.id}
+                      className={`flex items-start p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                        selectedEnhancementMethod === method.id
+                          ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20'
+                          : 'border-gray-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-gray-600'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="enhancementMethod"
+                        value={method.id}
+                        checked={selectedEnhancementMethod === method.id}
+                        onChange={() => setSelectedEnhancementMethod(method.id as EnhancementMethod)}
+                        className="mt-1 h-4 w-4 text-cyan-600 focus:ring-cyan-500"
+                      />
+                      <div className="ml-3 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-zinc-900 dark:text-white">{method.name}</span>
+                          {method.badge && <span className="badge badge-primary text-xs">{method.badge}</span>}
+                        </div>
+                        <span className="text-xs text-white0 dark:text-gray-400">{method.desc}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
               </div>
-              <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+
+              <div className="px-6 py-4 bg-white dark:bg-zinc-800 flex flex-col sm:flex-row-reverse gap-3">
                 <button
-                  type="button"
                   onClick={handleReprocess}
                   disabled={isReprocessing}
-                  className="inline-flex w-full justify-center rounded-md bg-forensic-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-forensic-500 sm:ml-3 sm:w-auto disabled:opacity-50"
+                  className="btn-primary flex items-center justify-center gap-2"
                 >
                   {isReprocessing ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
                       Processing...
                     </>
                   ) : (
@@ -974,10 +884,9 @@ export default function FingerprintViewer() {
                   )}
                 </button>
                 <button
-                  type="button"
                   onClick={() => setShowReprocessModal(false)}
                   disabled={isReprocessing}
-                  className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto disabled:opacity-50"
+                  className="btn-secondary"
                 >
                   Cancel
                 </button>

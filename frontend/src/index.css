@@ -1,173 +1,501 @@
+/* Import Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* PWA and Mobile optimizations */
+/* ============================================
+   CSS CUSTOM PROPERTIES
+   ============================================ */
+
 :root {
   --sat: env(safe-area-inset-top);
   --sar: env(safe-area-inset-right);
   --sab: env(safe-area-inset-bottom);
   --sal: env(safe-area-inset-left);
+
+  /* Toast colors */
+  --toast-bg: #ffffff;
+  --toast-color: #18181b;
+  --toast-border: #e4e4e7;
 }
 
-html {
-  /* Prevent pull-to-refresh on mobile */
-  overscroll-behavior-y: contain;
+.dark {
+  --toast-bg: #27272a;
+  --toast-color: #fafafa;
+  --toast-border: #3f3f46;
 }
 
-body {
-  @apply bg-gray-50 text-gray-900;
-  /* Support for dynamic viewport height */
-  min-height: 100dvh;
-  min-height: -webkit-fill-available;
-  /* Prevent text size adjustment on orientation change */
-  -webkit-text-size-adjust: 100%;
-  /* Safe area padding for notched devices */
-  padding-top: var(--sat);
-  padding-left: var(--sal);
-  padding-right: var(--sar);
+/* ============================================
+   BASE LAYER - Global defaults
+   ============================================ */
+
+@layer base {
+  html {
+    overscroll-behavior-y: contain;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
+    -webkit-text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    @apply bg-gray-50 text-gray-900 transition-colors duration-300;
+  }
+
+  .dark body {
+    @apply bg-zinc-950 text-zinc-50;
+  }
+
+  /* Override Headless UI styles for dark mode */
+  .dark [data-headlessui-state] {
+    @apply text-zinc-50;
+  }
 }
 
-/* Touch-friendly button base */
+/* ============================================
+   COMPONENT LAYER
+   ============================================ */
+
 @layer components {
-  .btn-touch {
-    @apply min-h-touch min-w-touch inline-flex items-center justify-center;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-  }
+  /* ============ BUTTONS ============ */
 
-  .touch-target {
-    @apply relative;
-  }
-
-  .touch-target::before {
-    content: '';
-    @apply absolute inset-0;
+  .btn {
+    @apply inline-flex items-center justify-center gap-2
+           font-semibold rounded-xl
+           transition-all duration-200 ease-out
+           focus:outline-none focus:ring-2 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
     min-height: 44px;
-    min-width: 44px;
-    transform: translate(-50%, -50%);
-    left: 50%;
-    top: 50%;
+    padding: 0.625rem 1.25rem;
+  }
+
+  .btn-primary {
+    @apply btn text-white
+           bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600
+           hover:from-indigo-600 hover:via-indigo-700 hover:to-purple-700
+           active:scale-[0.98]
+           shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30
+           focus:ring-indigo-500 focus:ring-offset-white
+           dark:focus:ring-offset-zinc-900;
+  }
+
+  .btn-secondary {
+    @apply btn
+           bg-white text-gray-700 border-2 border-gray-200
+           hover:bg-gray-50 hover:border-gray-300
+           active:bg-gray-100 active:scale-[0.98]
+           dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700
+           dark:hover:bg-zinc-700 dark:hover:border-zinc-600
+           focus:ring-gray-400 focus:ring-offset-white
+           dark:focus:ring-offset-zinc-900;
+  }
+
+  .btn-ghost {
+    @apply btn
+           text-gray-600 hover:bg-gray-100 hover:text-gray-900
+           dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100
+           active:scale-[0.98]
+           focus:ring-gray-400;
+  }
+
+  .btn-danger {
+    @apply btn text-white
+           bg-gradient-to-r from-rose-500 to-rose-600
+           hover:from-rose-600 hover:to-rose-700
+           active:scale-[0.98]
+           shadow-lg shadow-rose-500/25 hover:shadow-xl hover:shadow-rose-500/30
+           focus:ring-rose-500;
+  }
+
+  .btn-sm {
+    @apply text-sm;
+    min-height: 36px;
+    padding: 0.5rem 1rem;
+  }
+
+  /* ============ CARDS ============ */
+
+  .card {
+    @apply bg-white rounded-2xl border border-gray-200 shadow-sm
+           dark:bg-zinc-900 dark:border-zinc-800
+           transition-all duration-200;
+  }
+
+  .card-hover {
+    @apply hover:shadow-lg hover:border-gray-300 hover:-translate-y-1
+           dark:hover:border-zinc-700 dark:hover:shadow-zinc-900/50
+           cursor-pointer;
+  }
+
+  .card-interactive {
+    @apply card card-hover active:scale-[0.99];
+  }
+
+  /* ============ INPUTS ============ */
+
+  .input {
+    @apply w-full px-4 py-3 rounded-xl
+           bg-gray-50 border-2 border-gray-200
+           text-gray-900 placeholder-gray-400
+           focus:outline-none focus:ring-0 focus:border-indigo-500 focus:bg-white
+           dark:bg-zinc-800 dark:border-zinc-700
+           dark:text-zinc-100 dark:placeholder-zinc-500
+           dark:focus:border-indigo-400 dark:focus:bg-zinc-800
+           transition-all duration-200;
+  }
+
+  /* ============ BADGES ============ */
+
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full
+           text-xs font-semibold uppercase tracking-wide;
+  }
+
+  .badge-primary {
+    @apply bg-indigo-100 text-indigo-700
+           dark:bg-indigo-500/20 dark:text-indigo-300;
+  }
+
+  .badge-success {
+    @apply bg-emerald-100 text-emerald-700
+           dark:bg-emerald-500/20 dark:text-emerald-300;
+  }
+
+  .badge-warning {
+    @apply bg-amber-100 text-amber-700
+           dark:bg-amber-500/20 dark:text-amber-300;
+  }
+
+  .badge-danger {
+    @apply bg-rose-100 text-rose-700
+           dark:bg-rose-500/20 dark:text-rose-300;
+  }
+
+  .badge-neutral {
+    @apply bg-gray-100 text-gray-600
+           dark:bg-zinc-800 dark:text-zinc-400;
+  }
+
+  /* ============ STATUS BADGES ============ */
+
+  .status-badge {
+    @apply badge;
+  }
+
+  .status-badge.pending {
+    @apply bg-gray-100 text-gray-600
+           dark:bg-zinc-800 dark:text-zinc-400;
+  }
+
+  .status-badge.open {
+    @apply bg-indigo-100 text-indigo-700
+           dark:bg-indigo-500/20 dark:text-indigo-300;
+  }
+
+  .status-badge.in_progress,
+  .status-badge.processing {
+    @apply bg-cyan-100 text-cyan-700
+           dark:bg-cyan-500/20 dark:text-cyan-300
+           animate-pulse;
+  }
+
+  .status-badge.completed {
+    @apply bg-emerald-100 text-emerald-700
+           dark:bg-emerald-500/20 dark:text-emerald-300;
+  }
+
+  .status-badge.closed {
+    @apply bg-gray-200 text-gray-600
+           dark:bg-zinc-700 dark:text-zinc-400;
+  }
+
+  .status-badge.failed {
+    @apply bg-rose-100 text-rose-700
+           dark:bg-rose-500/20 dark:text-rose-300;
+  }
+
+  /* ============ QUALITY BADGES ============ */
+
+  .quality-badge {
+    @apply badge font-bold;
+  }
+
+  .quality-badge.high {
+    @apply bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/25;
+  }
+
+  .quality-badge.medium {
+    @apply bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/25;
+  }
+
+  .quality-badge.low {
+    @apply bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-lg shadow-rose-500/25;
+  }
+
+  /* ============ PATTERN BADGE ============ */
+
+  .pattern-badge {
+    @apply inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold
+           bg-gradient-to-r from-indigo-500 to-purple-500 text-white
+           shadow-lg shadow-indigo-500/30;
+  }
+
+  /* ============ STAT CARDS ============ */
+
+  .stat-card {
+    @apply card p-6 relative overflow-hidden;
+  }
+
+  .stat-value {
+    @apply text-4xl font-extrabold text-gray-900 dark:text-white;
+  }
+
+  .stat-label {
+    @apply text-sm font-medium text-gray-500 dark:text-zinc-400 mt-1;
+  }
+
+  .stat-change {
+    @apply inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full;
+  }
+
+  .stat-change-up {
+    @apply bg-emerald-100 text-emerald-700
+           dark:bg-emerald-500/20 dark:text-emerald-300;
+  }
+
+  .stat-change-down {
+    @apply bg-rose-100 text-rose-700
+           dark:bg-rose-500/20 dark:text-rose-300;
+  }
+
+  /* ============ PROGRESS BARS ============ */
+
+  .progress-bar {
+    @apply h-2.5 rounded-full bg-gray-200 dark:bg-zinc-700 overflow-hidden;
+  }
+
+  .progress-fill {
+    @apply h-full rounded-full transition-all duration-500 ease-out;
+  }
+
+  .progress-fill-primary {
+    @apply bg-gradient-to-r from-indigo-400 via-indigo-500 to-purple-500;
+  }
+
+  .progress-fill-success {
+    @apply bg-gradient-to-r from-emerald-400 to-emerald-500;
+  }
+
+  .progress-fill-warning {
+    @apply bg-gradient-to-r from-amber-400 to-amber-500;
+  }
+
+  .progress-fill-danger {
+    @apply bg-gradient-to-r from-rose-400 to-rose-500;
+  }
+
+  /* ============ SECTION HEADERS ============ */
+
+  .section-header {
+    @apply flex items-center justify-between mb-6;
+  }
+
+  .section-title {
+    @apply text-xl font-bold text-gray-900 dark:text-white;
+  }
+
+  .section-subtitle {
+    @apply text-sm text-gray-500 dark:text-zinc-400;
+  }
+
+  /* ============ EMPTY STATE ============ */
+
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-16 px-6 text-center;
+  }
+
+  .empty-state-icon {
+    @apply w-20 h-20 text-gray-300 dark:text-zinc-600 mb-6;
+  }
+
+  .empty-state-title {
+    @apply text-xl font-bold text-gray-900 dark:text-white mb-2;
+  }
+
+  .empty-state-description {
+    @apply text-gray-500 dark:text-zinc-400 max-w-sm;
+  }
+
+  /* ============ SKELETON LOADING ============ */
+
+  .skeleton {
+    @apply bg-gray-200 dark:bg-zinc-800 rounded-xl animate-pulse;
+  }
+
+  .skeleton-text {
+    @apply skeleton h-4 w-full;
+  }
+
+  .skeleton-title {
+    @apply skeleton h-7 w-2/3;
+  }
+
+  .skeleton-avatar {
+    @apply skeleton h-12 w-12 rounded-full;
+  }
+
+  .skeleton-card {
+    @apply skeleton h-36 w-full rounded-2xl;
+  }
+
+  /* ============ DIVIDER ============ */
+
+  .divider {
+    @apply border-t border-gray-200 dark:border-zinc-800;
+  }
+
+  /* ============ GRADIENT TEXT ============ */
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500;
+  }
+
+  /* ============ GLASS EFFECT ============ */
+
+  .glass {
+    @apply bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl;
+  }
+
+  /* ============ MESH BACKGROUND ============ */
+
+  .bg-mesh {
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 40% 60%, rgba(6, 182, 212, 0.1) 0%, transparent 40%);
+  }
+
+  /* ============ SCROLLBAR ============ */
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ============ FOCUS RING ============ */
+
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:ring-offset-2
+           dark:focus:ring-offset-zinc-900;
   }
 }
 
-/* Fingerprint viewer styles */
+/* ============================================
+   FINGERPRINT VIEWER
+   ============================================ */
+
 .fingerprint-viewer {
-  @apply relative overflow-hidden bg-black rounded-lg;
-  touch-action: none; /* Enable custom touch gestures */
+  @apply relative overflow-hidden bg-zinc-950 rounded-2xl;
+  touch-action: none;
 }
 
 .fingerprint-viewer img {
   @apply max-w-full h-auto;
-  image-rendering: pixelated;
+  image-rendering: -webkit-optimize-contrast;
   -webkit-user-drag: none;
   user-select: none;
 }
 
-/* Quality badges */
-.quality-badge {
-  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+.viewer-toolbar {
+  @apply absolute bottom-0 left-0 right-0 p-4
+         bg-gradient-to-t from-black/90 via-black/50 to-transparent;
 }
 
-.quality-badge.high {
-  @apply bg-green-100 text-green-800;
+.viewer-controls {
+  @apply flex items-center justify-center gap-2
+         bg-white/10 backdrop-blur-xl rounded-2xl p-2
+         border border-white/20;
 }
 
-.quality-badge.medium {
-  @apply bg-yellow-100 text-yellow-800;
+.viewer-btn {
+  @apply p-2.5 rounded-xl text-white/80 hover:text-white hover:bg-white/10
+         transition-all duration-200;
 }
 
-.quality-badge.low {
-  @apply bg-red-100 text-red-800;
+.viewer-btn.active {
+  @apply bg-indigo-500 text-white shadow-lg shadow-indigo-500/30;
 }
 
-/* Pattern badge */
-.pattern-badge {
-  @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-forensic-100 text-forensic-800;
-}
+/* ============================================
+   MOBILE STYLES
+   ============================================ */
 
-/* Status badges */
-.status-badge {
-  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
-}
-
-.status-badge.pending {
-  @apply bg-gray-100 text-gray-800;
-}
-
-.status-badge.processing {
-  @apply bg-blue-100 text-blue-800;
-}
-
-.status-badge.completed {
-  @apply bg-green-100 text-green-800;
-}
-
-.status-badge.failed {
-  @apply bg-red-100 text-red-800;
-}
-
-/* Mobile-specific styles */
 @media (max-width: 640px) {
-  /* Larger touch targets on mobile */
   .mobile-card {
     @apply p-4;
   }
 
-  /* Full-width buttons on mobile */
   .mobile-btn-full {
     @apply w-full;
   }
 
-  /* Stack navigation items */
   .mobile-stack {
     @apply flex-col space-y-2;
   }
 }
 
-/* Bottom navigation spacing */
 .has-bottom-nav {
-  padding-bottom: calc(64px + var(--sab));
+  padding-bottom: calc(80px + var(--sab));
 }
 
-/* Camera modal full screen on mobile */
-@media (max-width: 640px) {
-  .camera-modal {
-    @apply fixed inset-0 z-50;
-  }
+/* ============================================
+   UTILITIES
+   ============================================ */
 
-  .camera-modal video {
-    @apply w-full h-full object-cover;
-  }
-}
-
-/* Smooth scrolling for iOS */
 .scroll-smooth {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Hide scrollbar but keep functionality */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-/* Prevent zoom on double-tap for buttons */
 button, a {
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Loading spinner animation */
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+/* Touch-friendly sizing */
+.btn-touch {
+  @apply min-h-[44px] min-w-[44px] inline-flex items-center justify-center;
+}
+
+/* Selection colors */
+::selection {
+  @apply bg-indigo-500/30;
+}
+
+/* Custom scrollbar for non-mobile */
+@media (min-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
   }
-}
 
-.animate-spin {
-  animation: spin 1s linear infinite;
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-zinc-900;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-zinc-700 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-zinc-600;
+  }
 }

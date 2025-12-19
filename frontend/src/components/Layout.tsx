@@ -9,9 +9,11 @@ import {
   Cog6ToothIcon,
   FingerPrintIcon,
   ArrowRightOnRectangleIcon,
+  ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../hooks/useAuth';
 import MobileNav from './MobileNav';
+import ThemeToggle from './ThemeToggle';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: HomeIcon },
@@ -19,17 +21,19 @@ const navigation = [
   { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
 ];
 
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(' ');
-}
-
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const { user, logout } = useAuth();
 
+  const isActive = (href: string) => {
+    if (href === '/') return location.pathname === '/';
+    return location.pathname.startsWith(href);
+  };
+
   return (
-    <div className="min-h-screen-dvh">
+    <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 transition-colors duration-300">
+      {/* Mobile sidebar */}
       <Transition.Root show={sidebarOpen} as={Fragment}>
         <Dialog as="div" className="relative z-50 lg:hidden" onClose={setSidebarOpen}>
           <Transition.Child
@@ -41,7 +45,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-gray-900/80" />
+            <div className="fixed inset-0 bg-zinc-950/80 backdrop-blur-sm" />
           </Transition.Child>
 
           <div className="fixed inset-0 flex">
@@ -67,7 +71,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <div className="absolute left-full top-0 flex w-16 justify-center pt-5">
                     <button
                       type="button"
-                      className="-m-2.5 p-2.5 min-h-touch min-w-touch flex items-center justify-center"
+                      className="-m-2.5 p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm"
                       onClick={() => setSidebarOpen(false)}
                     >
                       <span className="sr-only">Close sidebar</span>
@@ -75,54 +79,68 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </button>
                   </div>
                 </Transition.Child>
-                <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-forensic-900 px-6 pb-4 pt-safe-top">
-                  <div className="flex h-16 shrink-0 items-center">
-                    <FingerPrintIcon className="h-8 w-8 text-white" />
-                    <span className="ml-2 text-white font-semibold">Forensics</span>
+
+                {/* Mobile sidebar content */}
+                <div className="flex grow flex-col overflow-y-auto bg-zinc-900">
+                  {/* Logo */}
+                  <div className="flex h-20 items-center px-6 border-b border-zinc-800">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/30">
+                        <FingerPrintIcon className="h-7 w-7 text-white" />
+                      </div>
+                      <div>
+                        <span className="text-white font-bold text-lg">FP Forensics</span>
+                        <p className="text-xs text-zinc-400">Analysis Platform</p>
+                      </div>
+                    </div>
                   </div>
-                  <nav className="flex flex-1 flex-col">
-                    <ul role="list" className="flex flex-1 flex-col gap-y-7">
-                      <li>
-                        <ul role="list" className="-mx-2 space-y-1">
-                          {navigation.map((item) => (
-                            <li key={item.name}>
-                              <Link
-                                to={item.href}
-                                onClick={() => setSidebarOpen(false)}
-                                className={classNames(
-                                  location.pathname === item.href
-                                    ? 'bg-forensic-800 text-white'
-                                    : 'text-forensic-200 hover:text-white hover:bg-forensic-800',
-                                  'group flex gap-x-3 rounded-md p-3 text-sm leading-6 font-semibold min-h-touch items-center'
-                                )}
-                              >
-                                <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
-                                {item.name}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      </li>
-                      <li className="mt-auto">
-                        <div className="flex items-center gap-x-4 px-2 py-3 text-sm font-semibold leading-6 text-white">
-                          <div className="h-10 w-10 rounded-full bg-forensic-700 flex items-center justify-center text-lg">
-                            {user?.username?.charAt(0).toUpperCase()}
-                          </div>
-                          <div className="flex-1">
-                            <span aria-hidden="true">{user?.username}</span>
-                            <p className="text-xs text-forensic-300 capitalize">{user?.role}</p>
-                          </div>
-                          <button
-                            onClick={logout}
-                            className="text-forensic-300 hover:text-white min-h-touch min-w-touch flex items-center justify-center"
-                            title="Logout"
+
+                  {/* Navigation */}
+                  <nav className="flex-1 px-4 py-6">
+                    <ul className="space-y-2">
+                      {navigation.map((item) => (
+                        <li key={item.name}>
+                          <Link
+                            to={item.href}
+                            onClick={() => setSidebarOpen(false)}
+                            className={`
+                              flex items-center gap-3 px-4 py-3.5 rounded-xl font-medium transition-all duration-200
+                              ${isActive(item.href)
+                                ? 'bg-indigo-600/20 text-white border border-indigo-500/40'
+                                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                              }
+                            `}
                           >
-                            <ArrowRightOnRectangleIcon className="h-6 w-6" />
-                          </button>
-                        </div>
-                      </li>
+                            <item.icon className={`h-5 w-5 ${isActive(item.href) ? 'text-indigo-400' : ''}`} />
+                            <span className="flex-1">{item.name}</span>
+                            {isActive(item.href) && (
+                              <ChevronRightIcon className="h-4 w-4 text-indigo-400" />
+                            )}
+                          </Link>
+                        </li>
+                      ))}
                     </ul>
                   </nav>
+
+                  {/* User section */}
+                  <div className="p-4 border-t border-zinc-800">
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-zinc-800/50">
+                      <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg">
+                        {user?.username?.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-white truncate">{user?.username}</p>
+                        <p className="text-xs text-zinc-400 capitalize">{user?.role}</p>
+                      </div>
+                      <button
+                        onClick={logout}
+                        className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors"
+                        title="Logout"
+                      >
+                        <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </Dialog.Panel>
             </Transition.Child>
@@ -130,101 +148,127 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </Dialog>
       </Transition.Root>
 
-      {/* Static sidebar for desktop */}
+      {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-forensic-900 px-6 pb-4">
-          <div className="flex h-16 shrink-0 items-center">
-            <FingerPrintIcon className="h-8 w-8 text-white" />
-            <span className="ml-2 text-white font-semibold text-lg">Fingerprint Forensics</span>
+        <div className="flex grow flex-col overflow-y-auto bg-zinc-900 border-r border-zinc-800">
+          {/* Logo */}
+          <div className="flex h-20 items-center px-6 border-b border-zinc-800">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/30">
+                <FingerPrintIcon className="h-7 w-7 text-white" />
+              </div>
+              <div>
+                <span className="text-white font-bold text-lg">FP Forensics</span>
+                <p className="text-xs text-zinc-400">Analysis Platform</p>
+              </div>
+            </div>
           </div>
-          <nav className="flex flex-1 flex-col">
-            <ul role="list" className="flex flex-1 flex-col gap-y-7">
-              <li>
-                <ul role="list" className="-mx-2 space-y-1">
-                  {navigation.map((item) => (
-                    <li key={item.name}>
-                      <Link
-                        to={item.href}
-                        className={classNames(
-                          location.pathname === item.href
-                            ? 'bg-forensic-800 text-white'
-                            : 'text-forensic-200 hover:text-white hover:bg-forensic-800',
-                          'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
-                        )}
-                      >
-                        <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
-                        {item.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-              <li className="mt-auto">
-                <div className="flex items-center gap-x-4 px-2 py-3 text-sm font-semibold leading-6 text-white">
-                  <div className="h-8 w-8 rounded-full bg-forensic-700 flex items-center justify-center">
-                    {user?.username?.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1">
-                    <span className="sr-only">Your profile</span>
-                    <span aria-hidden="true">{user?.username}</span>
-                    <p className="text-xs text-forensic-300 capitalize">{user?.role}</p>
-                  </div>
-                  <button
-                    onClick={logout}
-                    className="text-forensic-300 hover:text-white"
-                    title="Logout"
+
+          {/* Navigation */}
+          <nav className="flex-1 px-4 py-6">
+            <p className="px-4 mb-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Menu</p>
+            <ul className="space-y-1.5">
+              {navigation.map((item) => (
+                <li key={item.name}>
+                  <Link
+                    to={item.href}
+                    className={`
+                      flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200
+                      ${isActive(item.href)
+                        ? 'bg-indigo-600/20 text-white border border-indigo-500/40'
+                        : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                      }
+                    `}
                   >
-                    <ArrowRightOnRectangleIcon className="h-5 w-5" />
-                  </button>
-                </div>
-              </li>
+                    <item.icon className={`h-5 w-5 ${isActive(item.href) ? 'text-indigo-400' : ''}`} />
+                    <span className="flex-1">{item.name}</span>
+                    {isActive(item.href) && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                    )}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </nav>
+
+          {/* User section */}
+          <div className="p-4 border-t border-zinc-800">
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-zinc-800/50 hover:bg-zinc-800 transition-colors">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-500/20">
+                {user?.username?.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white truncate">{user?.username}</p>
+                <p className="text-xs text-zinc-400 capitalize">{user?.role}</p>
+              </div>
+              <button
+                onClick={logout}
+                className="p-2 rounded-lg text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                title="Logout"
+              >
+                <ArrowRightOnRectangleIcon className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* Main content area */}
       <div className="lg:pl-72">
-        {/* Mobile header */}
-        <div className="sticky top-0 z-40 flex h-14 sm:h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+        {/* Top header bar */}
+        <header className="sticky top-0 z-40 flex h-16 items-center gap-4
+          bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl
+          border-b border-gray-200 dark:border-zinc-800
+          px-4 sm:px-6 lg:px-8 transition-colors duration-200">
+
+          {/* Mobile menu button */}
           <button
             type="button"
-            className="-m-2.5 p-2.5 text-gray-700 lg:hidden min-h-touch min-w-touch flex items-center justify-center"
+            className="lg:hidden p-2 -ml-2 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100
+              dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800
+              transition-colors"
             onClick={() => setSidebarOpen(true)}
           >
             <span className="sr-only">Open sidebar</span>
-            <Bars3Icon className="h-6 w-6" aria-hidden="true" />
+            <Bars3Icon className="h-6 w-6" />
           </button>
 
-          <div className="h-6 w-px bg-gray-900/10 lg:hidden" aria-hidden="true" />
+          {/* Separator */}
+          <div className="h-6 w-px bg-gray-200 dark:bg-zinc-700 lg:hidden" />
 
-          <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-            {/* Mobile title */}
-            <div className="flex flex-1 items-center lg:hidden">
-              <FingerPrintIcon className="h-6 w-6 text-forensic-600" />
-              <span className="ml-2 font-semibold text-gray-900 text-sm sm:text-base">FP Forensics</span>
-            </div>
-            <div className="hidden lg:flex flex-1"></div>
-            <div className="flex items-center gap-x-4 lg:gap-x-6">
-              <span className="hidden sm:block text-sm text-gray-500">
+          {/* Mobile title */}
+          <div className="flex items-center gap-2 lg:hidden">
+            <FingerPrintIcon className="h-6 w-6 text-indigo-500" />
+            <span className="font-bold text-gray-900 dark:text-white">FP Forensics</span>
+          </div>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Right side actions */}
+          <div className="flex items-center gap-3">
+            {/* Theme toggle */}
+            <ThemeToggle />
+
+            {/* Date (hidden on mobile) */}
+            <div className="hidden md:flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400">
+              <div className="w-px h-5 bg-gray-200 dark:bg-zinc-700" />
+              <span>
                 {new Date().toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </span>
-              <span className="sm:hidden text-xs text-gray-500">
-                {new Date().toLocaleDateString('en-US', {
+                  weekday: 'short',
                   month: 'short',
                   day: 'numeric',
                 })}
               </span>
             </div>
           </div>
-        </div>
+        </header>
 
-        <main className="py-4 sm:py-6 lg:py-10 pb-20 lg:pb-10">
-          <div className="px-4 sm:px-6 lg:px-8">{children}</div>
+        {/* Page content */}
+        <main className="py-6 lg:py-8 pb-24 lg:pb-8">
+          <div className="px-4 sm:px-6 lg:px-8 animate-fade-in">
+            {children}
+          </div>
         </main>
       </div>
 

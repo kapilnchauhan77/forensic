@@ -7,6 +7,7 @@ import {
   FingerPrintIcon,
   ChevronRightIcon,
   FunnelIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 import { casesApi } from '../services/api';
 import type { Case, CaseListResponse } from '../types';
@@ -58,6 +59,20 @@ export default function CaseList() {
     }
   };
 
+  const handleDeleteCase = async (caseItem: Case) => {
+    if (!window.confirm(`Are you sure you want to delete case "${caseItem.case_number}"? This will also delete all exhibits and fingerprints associated with this case. This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await casesApi.delete(caseItem.id);
+      toast.success('Case deleted successfully');
+      fetchCases();
+    } catch (error) {
+      toast.error('Failed to delete case');
+    }
+  };
+
   const totalPages = Math.ceil(total / pageSize);
 
   return (
@@ -65,14 +80,14 @@ export default function CaseList() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4 sm:mb-8">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">Cases</h1>
-          <p className="mt-1 text-xs sm:text-sm text-gray-500 hidden sm:block">
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">Cases</h1>
+          <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-zinc-400 hidden sm:block">
             Manage forensic cases and fingerprint evidence
           </p>
         </div>
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="inline-flex items-center rounded-lg bg-forensic-600 px-3 py-2 sm:px-4 sm:py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-forensic-500 active:bg-forensic-700 min-h-touch"
+          className="inline-flex items-center rounded-lg bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 px-3 py-2 sm:px-4 sm:py-2.5 text-sm font-semibold text-white shadow-sm min-h-touch"
         >
           <PlusIcon className="h-5 w-5 sm:-ml-0.5 sm:mr-1.5" aria-hidden="true" />
           <span className="hidden sm:inline">New Case</span>
@@ -84,7 +99,7 @@ export default function CaseList() {
         {/* Mobile: Compact search with filter toggle */}
         <div className="flex gap-2 sm:hidden">
           <div className="relative flex-1">
-            <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+            <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
             <input
               type="text"
               placeholder="Search..."
@@ -93,13 +108,13 @@ export default function CaseList() {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="block w-full rounded-lg border-0 py-2.5 pl-10 pr-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-forensic-600 text-sm"
+              className="block w-full rounded-lg border-0 py-2.5 pl-10 pr-3 text-gray-900 dark:text-white bg-white dark:bg-zinc-800 ring-1 ring-inset ring-gray-300 dark:ring-zinc-700 placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 text-sm"
             />
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center justify-center w-11 h-11 rounded-lg ring-1 ring-inset ${
-              statusFilter ? 'bg-forensic-50 ring-forensic-300 text-forensic-600' : 'bg-white ring-gray-300 text-gray-500'
+              statusFilter ? 'bg-indigo-50 dark:bg-indigo-900/30 ring-indigo-300 dark:ring-indigo-700 text-indigo-600 dark:text-indigo-400' : 'bg-white dark:bg-zinc-800 ring-gray-300 dark:ring-zinc-700 text-gray-500 dark:text-zinc-400'
             }`}
           >
             <FunnelIcon className="h-5 w-5" />
@@ -115,7 +130,7 @@ export default function CaseList() {
                 setStatusFilter(e.target.value);
                 setPage(1);
               }}
-              className="w-full rounded-lg border-0 py-2.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-forensic-600 text-sm"
+              className="w-full rounded-lg border-0 py-2.5 pl-3 pr-10 text-gray-900 dark:text-white bg-white dark:bg-zinc-800 ring-1 ring-inset ring-gray-300 dark:ring-zinc-700 focus:ring-2 focus:ring-indigo-600 text-sm"
             >
               <option value="">All Statuses</option>
               <option value="open">Open</option>
@@ -130,7 +145,7 @@ export default function CaseList() {
         {/* Desktop: Full filters */}
         <div className="hidden sm:flex gap-4">
           <div className="relative flex-1">
-            <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+            <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
             <input
               type="text"
               placeholder="Search cases..."
@@ -139,7 +154,7 @@ export default function CaseList() {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="block w-full rounded-md border-0 py-2 pl-10 pr-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-forensic-600 sm:text-sm sm:leading-6"
+              className="block w-full rounded-md border-0 py-2 pl-10 pr-3 text-gray-900 dark:text-white bg-white dark:bg-zinc-800 ring-1 ring-inset ring-gray-300 dark:ring-zinc-700 placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
             />
           </div>
           <select
@@ -148,7 +163,7 @@ export default function CaseList() {
               setStatusFilter(e.target.value);
               setPage(1);
             }}
-            className="rounded-md border-0 py-2 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-forensic-600 sm:text-sm"
+            className="rounded-md border-0 py-2 pl-3 pr-10 text-gray-900 dark:text-white bg-white dark:bg-zinc-800 ring-1 ring-inset ring-gray-300 dark:ring-zinc-700 focus:ring-2 focus:ring-indigo-600 sm:text-sm"
           >
             <option value="">All Statuses</option>
             <option value="open">Open</option>
@@ -161,20 +176,20 @@ export default function CaseList() {
       </div>
 
       {/* Cases List/Table */}
-      <div className="bg-white shadow rounded-lg overflow-hidden">
+      <div className="bg-white dark:bg-zinc-900 shadow dark:shadow-zinc-900/50 rounded-lg overflow-hidden border border-gray-200 dark:border-zinc-800">
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-forensic-600"></div>
+            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-indigo-600"></div>
           </div>
         ) : cases.length === 0 ? (
           <div className="text-center py-12 px-4">
-            <FolderIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-semibold text-gray-900">No cases</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating a new case.</p>
+            <FolderIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-zinc-600" />
+            <h3 className="mt-2 text-sm font-semibold text-gray-900 dark:text-white">No cases</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">Get started by creating a new case.</p>
             <div className="mt-6">
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="inline-flex items-center rounded-md bg-forensic-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-forensic-500 min-h-touch"
+                className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 min-h-touch"
               >
                 <PlusIcon className="-ml-0.5 mr-1.5 h-5 w-5" aria-hidden="true" />
                 New Case
@@ -184,29 +199,42 @@ export default function CaseList() {
         ) : (
           <>
             {/* Mobile: Card list */}
-            <ul className="divide-y divide-gray-200 sm:hidden">
+            <ul className="divide-y divide-gray-200 dark:divide-zinc-800 sm:hidden">
               {cases.map((caseItem) => (
-                <li key={caseItem.id}>
+                <li key={caseItem.id} className="relative">
                   <Link
                     to={`/cases/${caseItem.id}`}
-                    className="block px-4 py-3 hover:bg-gray-50 active:bg-gray-100"
+                    className="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-zinc-800/50 active:bg-gray-100 dark:active:bg-zinc-800"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center min-w-0 flex-1">
-                        <FolderIcon className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
+                        <FolderIcon className="h-5 w-5 text-gray-400 dark:text-zinc-500 mr-3 flex-shrink-0" />
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-forensic-600 truncate">
+                          <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400 truncate">
                             {caseItem.case_number}
                           </p>
-                          <p className="text-xs text-gray-500 truncate mt-0.5">
+                          <p className="text-xs text-gray-500 dark:text-zinc-400 truncate mt-0.5">
                             {caseItem.title}
                           </p>
                         </div>
                       </div>
-                      <ChevronRightIcon className="h-5 w-5 text-gray-400 ml-2 flex-shrink-0" />
+                      <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeleteCase(caseItem);
+                          }}
+                          className="p-2 text-gray-400 dark:text-zinc-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          title="Delete case"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                        <ChevronRightIcon className="h-5 w-5 text-gray-400 dark:text-zinc-500" />
+                      </div>
                     </div>
                     <div className="flex items-center justify-between mt-2 pl-8">
-                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                      <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-zinc-400">
                         <span className="flex items-center">
                           <FolderIcon className="h-3.5 w-3.5 mr-1" />
                           {caseItem.exhibit_count}
@@ -226,40 +254,43 @@ export default function CaseList() {
             </ul>
 
             {/* Desktop: Table */}
-            <table className="hidden sm:table min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="hidden sm:table min-w-full divide-y divide-gray-200 dark:divide-zinc-800">
+              <thead className="bg-gray-50 dark:bg-zinc-800/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                     Case
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                     Agency
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                     Evidence
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
                     Created
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
+                    Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-zinc-900 divide-y divide-gray-200 dark:divide-zinc-800">
                 {cases.map((caseItem) => (
-                  <tr key={caseItem.id} className="hover:bg-gray-50">
+                  <tr key={caseItem.id} className="hover:bg-gray-50 dark:hover:bg-zinc-800/50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link to={`/cases/${caseItem.id}`} className="block">
-                        <div className="text-sm font-medium text-forensic-600 hover:text-forensic-800">
+                        <div className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
                           {caseItem.case_number}
                         </div>
-                        <div className="text-sm text-gray-500 truncate max-w-xs">
+                        <div className="text-sm text-gray-500 dark:text-zinc-400 truncate max-w-xs">
                           {caseItem.title}
                         </div>
                       </Link>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-zinc-400">
                       {caseItem.agency || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -267,18 +298,27 @@ export default function CaseList() {
                         {caseItem.status.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-zinc-400">
                       <div className="flex items-center">
-                        <FolderIcon className="h-4 w-4 mr-1 text-gray-400" />
+                        <FolderIcon className="h-4 w-4 mr-1 text-gray-400 dark:text-zinc-500" />
                         {caseItem.exhibit_count} exhibits
                       </div>
                       <div className="flex items-center text-xs">
-                        <FingerPrintIcon className="h-3 w-3 mr-1 text-gray-400" />
+                        <FingerPrintIcon className="h-3 w-3 mr-1 text-gray-400 dark:text-zinc-500" />
                         {caseItem.fingerprint_count} prints
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-zinc-400">
                       {new Date(caseItem.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() => handleDeleteCase(caseItem)}
+                        className="text-gray-400 dark:text-zinc-500 hover:text-red-600 dark:hover:text-red-400 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        title="Delete case"
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -287,23 +327,23 @@ export default function CaseList() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+              <div className="bg-white dark:bg-zinc-900 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-zinc-800 sm:px-6">
                 {/* Mobile pagination */}
                 <div className="flex-1 flex justify-between sm:hidden">
                   <button
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="relative inline-flex items-center px-4 py-2.5 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 min-h-touch"
+                    className="relative inline-flex items-center px-4 py-2.5 border border-gray-300 dark:border-zinc-700 text-sm font-medium rounded-lg text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 disabled:opacity-50 min-h-touch"
                   >
                     Previous
                   </button>
-                  <span className="flex items-center text-sm text-gray-700">
+                  <span className="flex items-center text-sm text-gray-700 dark:text-zinc-300">
                     {page} / {totalPages}
                   </span>
                   <button
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
-                    className="relative inline-flex items-center px-4 py-2.5 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 min-h-touch"
+                    className="relative inline-flex items-center px-4 py-2.5 border border-gray-300 dark:border-zinc-700 text-sm font-medium rounded-lg text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 disabled:opacity-50 min-h-touch"
                   >
                     Next
                   </button>
@@ -312,7 +352,7 @@ export default function CaseList() {
                 {/* Desktop pagination */}
                 <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-sm text-gray-700">
+                    <p className="text-sm text-gray-700 dark:text-zinc-300">
                       Showing <span className="font-medium">{(page - 1) * pageSize + 1}</span> to{' '}
                       <span className="font-medium">{Math.min(page * pageSize, total)}</span> of{' '}
                       <span className="font-medium">{total}</span> results
@@ -323,14 +363,14 @@ export default function CaseList() {
                       <button
                         onClick={() => setPage(p => Math.max(1, p - 1))}
                         disabled={page === 1}
-                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-medium text-gray-500 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-700 disabled:opacity-50"
                       >
                         Previous
                       </button>
                       <button
                         onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                         disabled={page === totalPages}
-                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-medium text-gray-500 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-700 disabled:opacity-50"
                       >
                         Next
                       </button>

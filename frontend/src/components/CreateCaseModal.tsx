@@ -44,7 +44,7 @@ export default function CreateCaseModal({ isOpen, onClose, onSubmit }: CreateCas
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          <div className="fixed inset-0 bg-gray-500/75 dark:bg-zinc-950/80 transition-opacity" />
         </Transition.Child>
 
         <div className="fixed inset-0 z-10 overflow-y-auto">
@@ -58,11 +58,11 @@ export default function CreateCaseModal({ isOpen, onClose, onSubmit }: CreateCas
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+              <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white dark:bg-zinc-900 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
                 <div className="absolute right-0 top-0 pr-4 pt-4">
                   <button
                     type="button"
-                    className="rounded-md bg-white text-gray-400 hover:text-gray-500"
+                    className="rounded-md bg-white dark:bg-zinc-900 text-gray-400 dark:text-zinc-500 hover:text-gray-500 dark:hover:text-zinc-400"
                     onClick={onClose}
                   >
                     <span className="sr-only">Close</span>
@@ -73,12 +73,12 @@ export default function CreateCaseModal({ isOpen, onClose, onSubmit }: CreateCas
                 <form onSubmit={handleSubmit}>
                   <div className="sm:flex sm:items-start">
                     <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                      <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
+                      <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900 dark:text-white">
                         Create New Case
                       </Dialog.Title>
                       <div className="mt-6 space-y-4">
                         <div>
-                          <label htmlFor="case_number" className="block text-sm font-medium text-gray-700">
+                          <label htmlFor="case_number" className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
                             Case Number *
                           </label>
                           <input
@@ -87,13 +87,13 @@ export default function CreateCaseModal({ isOpen, onClose, onSubmit }: CreateCas
                             required
                             value={formData.case_number}
                             onChange={(e) => setFormData({ ...formData, case_number: e.target.value })}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-forensic-500 focus:ring-forensic-500 sm:text-sm"
+                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                             placeholder="e.g., CASE-2024-001"
                           />
                         </div>
 
                         <div>
-                          <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                          <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
                             Title *
                           </label>
                           <input
@@ -102,13 +102,13 @@ export default function CreateCaseModal({ isOpen, onClose, onSubmit }: CreateCas
                             required
                             value={formData.title}
                             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-forensic-500 focus:ring-forensic-500 sm:text-sm"
+                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                             placeholder="Brief case title"
                           />
                         </div>
 
                         <div>
-                          <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                          <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
                             Description
                           </label>
                           <textarea
@@ -116,14 +116,14 @@ export default function CreateCaseModal({ isOpen, onClose, onSubmit }: CreateCas
                             rows={3}
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-forensic-500 focus:ring-forensic-500 sm:text-sm"
+                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                             placeholder="Optional case description"
                           />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label htmlFor="agency" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="agency" className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
                               Agency
                             </label>
                             <input
@@ -131,19 +131,19 @@ export default function CreateCaseModal({ isOpen, onClose, onSubmit }: CreateCas
                               id="agency"
                               value={formData.agency}
                               onChange={(e) => setFormData({ ...formData, agency: e.target.value })}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-forensic-500 focus:ring-forensic-500 sm:text-sm"
+                              className="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                             />
                           </div>
 
                           <div>
-                            <label htmlFor="source_type" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="source_type" className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
                               Source Type
                             </label>
                             <select
                               id="source_type"
                               value={formData.source_type}
                               onChange={(e) => setFormData({ ...formData, source_type: e.target.value })}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-forensic-500 focus:ring-forensic-500 sm:text-sm"
+                              className="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                             >
                               <option value="crime_scene">Crime Scene</option>
                               <option value="booking">Booking</option>
@@ -156,7 +156,7 @@ export default function CreateCaseModal({ isOpen, onClose, onSubmit }: CreateCas
                         </div>
 
                         <div>
-                          <label htmlFor="external_reference" className="block text-sm font-medium text-gray-700">
+                          <label htmlFor="external_reference" className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
                             External Reference
                           </label>
                           <input
@@ -164,7 +164,7 @@ export default function CreateCaseModal({ isOpen, onClose, onSubmit }: CreateCas
                             id="external_reference"
                             value={formData.external_reference}
                             onChange={(e) => setFormData({ ...formData, external_reference: e.target.value })}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-forensic-500 focus:ring-forensic-500 sm:text-sm"
+                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                             placeholder="Reference from external systems"
                           />
                         </div>
@@ -175,13 +175,13 @@ export default function CreateCaseModal({ isOpen, onClose, onSubmit }: CreateCas
                   <div className="mt-6 sm:flex sm:flex-row-reverse gap-3">
                     <button
                       type="submit"
-                      className="inline-flex w-full justify-center rounded-md bg-forensic-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-forensic-500 sm:w-auto"
+                      className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:w-auto"
                     >
                       Create Case
                     </button>
                     <button
                       type="button"
-                      className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                      className="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-zinc-800 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700 sm:mt-0 sm:w-auto"
                       onClick={onClose}
                     >
                       Cancel

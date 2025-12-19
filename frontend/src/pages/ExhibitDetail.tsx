@@ -296,26 +296,26 @@ export default function ExhibitDetail() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-gray-100 text-gray-800';
-      case 'queued': return 'bg-yellow-100 text-yellow-800';
-      case 'processing': return 'bg-blue-100 text-blue-800';
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'failed': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pending': return 'bg-gray-100 dark:bg-zinc-700 text-gray-800 dark:text-zinc-200';
+      case 'queued': return 'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-800 dark:text-yellow-300';
+      case 'processing': return 'bg-blue-100 dark:bg-blue-500/20 text-blue-800 dark:text-blue-300';
+      case 'completed': return 'bg-green-100 dark:bg-green-500/20 text-green-800 dark:text-green-300';
+      case 'failed': return 'bg-red-100 dark:bg-red-500/20 text-red-800 dark:text-red-300';
+      default: return 'bg-gray-100 dark:bg-zinc-700 text-gray-800 dark:text-zinc-200';
     }
   };
 
   const getQualityColor = (score: number | null) => {
     if (score === null) return '';
-    if (score >= 70) return 'text-green-600';
-    if (score >= 40) return 'text-yellow-600';
-    return 'text-red-600';
+    if (score >= 70) return 'text-green-600 dark:text-green-400';
+    if (score >= 40) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-red-600 dark:text-red-400';
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-forensic-600"></div>
+        <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-cyan-600"></div>
       </div>
     );
   }
@@ -323,7 +323,7 @@ export default function ExhibitDetail() {
   if (!exhibit) {
     return (
       <div className="text-center py-12">
-        <h3 className="text-lg font-medium text-gray-900">Exhibit not found</h3>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Exhibit not found</h3>
       </div>
     );
   }
@@ -334,50 +334,50 @@ export default function ExhibitDetail() {
       <nav className="flex mb-4 overflow-x-auto scrollbar-hide" aria-label="Breadcrumb">
         <ol className="flex items-center space-x-1 sm:space-x-2 whitespace-nowrap">
           <li>
-            <Link to="/cases" className="text-gray-400 hover:text-gray-500 text-xs sm:text-sm">Cases</Link>
+            <Link to="/cases" className="text-gray-400 dark:text-zinc-500 hover:text-gray-500 dark:hover:text-zinc-400 text-xs sm:text-sm">Cases</Link>
           </li>
-          <ChevronRightIcon className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+          <ChevronRightIcon className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 dark:text-zinc-500 flex-shrink-0" />
           <li>
-            <Link to={`/cases/${caseData?.id}`} className="text-gray-400 hover:text-gray-500 text-xs sm:text-sm truncate max-w-[100px] sm:max-w-none">
+            <Link to={`/cases/${caseData?.id}`} className="text-gray-400 dark:text-zinc-500 hover:text-gray-500 dark:hover:text-zinc-400 text-xs sm:text-sm truncate max-w-[100px] sm:max-w-none">
               {caseData?.case_number}
             </Link>
           </li>
-          <ChevronRightIcon className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
-          <li className="text-xs sm:text-sm font-medium text-gray-500 truncate">{exhibit.exhibit_number}</li>
+          <ChevronRightIcon className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 dark:text-zinc-500 flex-shrink-0" />
+          <li className="text-xs sm:text-sm font-medium text-gray-500 dark:text-zinc-400 truncate">{exhibit.exhibit_number}</li>
         </ol>
       </nav>
 
       {/* Exhibit Header - Mobile Optimized */}
-      <div className="bg-white shadow rounded-lg mb-4 sm:mb-6">
+      <div className="bg-white dark:bg-zinc-900 shadow dark:shadow-zinc-900/50 rounded-lg mb-4 sm:mb-6 border border-gray-200 dark:border-zinc-800">
         <div className="px-4 py-4 sm:px-6 sm:py-5">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{exhibit.exhibit_number}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{exhibit.exhibit_number}</h1>
           {exhibit.description && (
-            <p className="mt-1 text-sm text-gray-600 line-clamp-2 sm:line-clamp-none">{exhibit.description}</p>
+            <p className="mt-1 text-sm text-gray-600 dark:text-zinc-400 line-clamp-2 sm:line-clamp-none">{exhibit.description}</p>
           )}
           <div className="mt-3 sm:mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 text-sm">
             {exhibit.location_collected && (
               <div>
-                <dt className="text-xs sm:text-sm text-gray-500">Location</dt>
-                <dd className="text-sm text-gray-900 truncate">{exhibit.location_collected}</dd>
+                <dt className="text-xs sm:text-sm text-gray-500 dark:text-zinc-400">Location</dt>
+                <dd className="text-sm text-gray-900 dark:text-white truncate">{exhibit.location_collected}</dd>
               </div>
             )}
             {exhibit.collector_name && (
               <div>
-                <dt className="text-xs sm:text-sm text-gray-500">Collector</dt>
-                <dd className="text-sm text-gray-900 truncate">{exhibit.collector_name}</dd>
+                <dt className="text-xs sm:text-sm text-gray-500 dark:text-zinc-400">Collector</dt>
+                <dd className="text-sm text-gray-900 dark:text-white truncate">{exhibit.collector_name}</dd>
               </div>
             )}
             {exhibit.collection_date && (
               <div>
-                <dt className="text-xs sm:text-sm text-gray-500">Date</dt>
-                <dd className="text-sm text-gray-900">
+                <dt className="text-xs sm:text-sm text-gray-500 dark:text-zinc-400">Date</dt>
+                <dd className="text-sm text-gray-900 dark:text-white">
                   {new Date(exhibit.collection_date).toLocaleDateString()}
                 </dd>
               </div>
             )}
             <div>
-              <dt className="text-xs sm:text-sm text-gray-500">Fingerprints</dt>
-              <dd className="text-sm text-gray-900">{fingerprints.length}</dd>
+              <dt className="text-xs sm:text-sm text-gray-500 dark:text-zinc-400">Fingerprints</dt>
+              <dd className="text-sm text-gray-900 dark:text-white">{fingerprints.length}</dd>
             </div>
           </div>
         </div>
@@ -390,25 +390,25 @@ export default function ExhibitDetail() {
           <div
             {...getRootProps()}
             className={`border-2 border-dashed rounded-xl p-4 sm:p-6 text-center cursor-pointer transition-colors
-              ${isDragActive ? 'border-forensic-500 bg-forensic-50' : 'border-gray-300 hover:border-forensic-400 active:bg-gray-50'}
+              ${isDragActive ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10' : 'border-gray-300 dark:border-zinc-700 hover:border-indigo-400 dark:hover:border-indigo-500 active:bg-gray-50 dark:active:bg-zinc-800'}
               ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <input {...getInputProps()} />
-            <CloudArrowUpIcon className="mx-auto h-8 w-8 sm:h-10 sm:w-10 text-gray-400" />
+            <CloudArrowUpIcon className="mx-auto h-8 w-8 sm:h-10 sm:w-10 text-gray-400 dark:text-zinc-500" />
             {isUploading && !isCameraOpen ? (
               <div className="mt-2 sm:mt-3">
-                <p className="text-xs sm:text-sm text-gray-600">Uploading... {uploadProgress}%</p>
-                <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5 sm:h-2">
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-zinc-400">Uploading... {uploadProgress}%</p>
+                <div className="mt-2 w-full bg-gray-200 dark:bg-zinc-700 rounded-full h-1.5 sm:h-2">
                   <div
-                    className="bg-forensic-600 h-full rounded-full transition-all"
+                    className="bg-indigo-600 h-full rounded-full transition-all"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
               </div>
             ) : (
               <>
-                <p className="mt-2 text-xs sm:text-sm font-medium text-gray-900">Upload</p>
-                <p className="mt-0.5 sm:mt-1 text-xs text-gray-500 hidden sm:block">
+                <p className="mt-2 text-xs sm:text-sm font-medium text-gray-900 dark:text-white">Upload</p>
+                <p className="mt-0.5 sm:mt-1 text-xs text-gray-500 dark:text-zinc-400 hidden sm:block">
                   {isDragActive ? 'Drop images here' : 'Drag & drop or tap'}
                 </p>
               </>
@@ -419,12 +419,12 @@ export default function ExhibitDetail() {
           <div
             onClick={openCamera}
             className={`border-2 border-dashed rounded-xl p-4 sm:p-6 text-center cursor-pointer transition-colors
-              border-gray-300 hover:border-forensic-400 active:bg-forensic-50
+              border-gray-300 dark:border-zinc-700 hover:border-indigo-400 dark:hover:border-indigo-500 active:bg-indigo-50 dark:active:bg-indigo-500/10
               ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <CameraIcon className="mx-auto h-8 w-8 sm:h-10 sm:w-10 text-gray-400" />
-            <p className="mt-2 text-xs sm:text-sm font-medium text-gray-900">Camera</p>
-            <p className="mt-0.5 sm:mt-1 text-xs text-gray-500 hidden sm:block">
+            <CameraIcon className="mx-auto h-8 w-8 sm:h-10 sm:w-10 text-gray-400 dark:text-zinc-500" />
+            <p className="mt-2 text-xs sm:text-sm font-medium text-gray-900 dark:text-white">Camera</p>
+            <p className="mt-0.5 sm:mt-1 text-xs text-gray-500 dark:text-zinc-400 hidden sm:block">
               Capture directly
             </p>
           </div>
@@ -530,21 +530,21 @@ export default function ExhibitDetail() {
 
           {/* Desktop: Modal layout */}
           <div className="hidden sm:flex min-h-full items-center justify-center p-4 bg-black bg-opacity-75">
-            <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full overflow-hidden">
+            <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-xl max-w-3xl w-full overflow-hidden">
               {/* Modal Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">Capture Fingerprint</h3>
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-zinc-800">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Capture Fingerprint</h3>
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={switchCamera}
-                    className="p-2 text-gray-400 hover:text-gray-500 rounded-lg hover:bg-gray-100"
+                    className="p-2 text-gray-400 dark:text-zinc-500 hover:text-gray-500 dark:hover:text-zinc-400 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800"
                     title="Switch camera"
                   >
                     <ArrowPathIcon className="h-5 w-5" />
                   </button>
                   <button
                     onClick={closeCamera}
-                    className="p-2 text-gray-400 hover:text-gray-500 rounded-lg hover:bg-gray-100"
+                    className="p-2 text-gray-400 dark:text-zinc-500 hover:text-gray-500 dark:hover:text-zinc-400 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800"
                   >
                     <XMarkIcon className="h-6 w-6" />
                   </button>
@@ -584,18 +584,18 @@ export default function ExhibitDetail() {
               </div>
 
               {/* Camera Controls */}
-              <div className="px-4 py-4 bg-gray-50 flex justify-center space-x-4">
+              <div className="px-4 py-4 bg-gray-50 dark:bg-zinc-800 flex justify-center space-x-4">
                 {!capturedImage ? (
                   <>
                     <button
                       onClick={closeCamera}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                      className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-200 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md hover:bg-gray-50 dark:hover:bg-zinc-600"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={capturePhoto}
-                      className="px-6 py-2 text-sm font-medium text-white bg-forensic-600 rounded-md hover:bg-forensic-500 flex items-center"
+                      className="px-6 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500 flex items-center"
                     >
                       <CameraIcon className="h-5 w-5 mr-2" />
                       Capture
@@ -605,7 +605,7 @@ export default function ExhibitDetail() {
                   <>
                     <button
                       onClick={retakePhoto}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                      className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-200 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-md hover:bg-gray-50 dark:hover:bg-zinc-600"
                     >
                       Retake
                     </button>
@@ -631,8 +631,8 @@ export default function ExhibitDetail() {
               </div>
 
               {/* Instructions */}
-              <div className="px-4 py-3 bg-gray-100 border-t border-gray-200">
-                <p className="text-xs text-gray-500 text-center">
+              <div className="px-4 py-3 bg-gray-100 dark:bg-zinc-800/50 border-t border-gray-200 dark:border-zinc-800">
+                <p className="text-xs text-gray-500 dark:text-zinc-400 text-center">
                   Position the fingerprint in the center of the frame. Ensure good lighting and focus.
                 </p>
               </div>
@@ -642,13 +642,13 @@ export default function ExhibitDetail() {
       )}
 
       {/* Fingerprints List */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-4 sm:px-6 sm:py-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-b border-gray-200">
-          <h2 className="text-base sm:text-lg font-medium text-gray-900">Fingerprints</h2>
+      <div className="bg-white dark:bg-zinc-900 shadow dark:shadow-zinc-900/50 rounded-lg border border-gray-200 dark:border-zinc-800">
+        <div className="px-4 py-4 sm:px-6 sm:py-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-b border-gray-200 dark:border-zinc-800">
+          <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">Fingerprints</h2>
           {fingerprints.some(fp => fp.status === 'pending') && (
             <button
               onClick={handleProcessAll}
-              className="inline-flex items-center justify-center rounded-lg bg-forensic-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-forensic-500 active:bg-forensic-700 min-h-touch w-full sm:w-auto"
+              className="inline-flex items-center justify-center rounded-lg bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-cyan-500 active:bg-cyan-700 min-h-touch w-full sm:w-auto"
             >
               <PlayIcon className="-ml-0.5 mr-1.5 h-5 w-5" />
               Process All Pending
@@ -658,9 +658,9 @@ export default function ExhibitDetail() {
 
         {fingerprints.length === 0 ? (
           <div className="text-center py-12 px-4">
-            <FingerPrintIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-semibold text-gray-900">No fingerprints</h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <FingerPrintIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-zinc-600" />
+            <h3 className="mt-2 text-sm font-semibold text-gray-900 dark:text-white">No fingerprints</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-zinc-400">
               Upload or capture fingerprint images to begin analysis.
             </p>
           </div>
@@ -669,7 +669,7 @@ export default function ExhibitDetail() {
             {fingerprints.map((fp) => (
               <div
                 key={fp.id}
-                className="relative bg-gray-50 rounded-lg overflow-hidden hover:shadow-md active:shadow-inner transition-shadow"
+                className="relative bg-gray-50 dark:bg-zinc-800 rounded-lg overflow-hidden hover:shadow-md dark:hover:shadow-zinc-900/50 active:shadow-inner transition-shadow"
               >
                 {/* Delete button */}
                 <button
@@ -685,7 +685,7 @@ export default function ExhibitDetail() {
                 </button>
 
                 <Link to={`/fingerprints/${fp.id}`} className="block">
-                  <div className="aspect-square bg-gray-200 flex items-center justify-center">
+                  <div className="aspect-square bg-gray-200 dark:bg-zinc-700 flex items-center justify-center">
                     {fp.original_url ? (
                       <img
                         src={fp.original_url}
@@ -693,11 +693,11 @@ export default function ExhibitDetail() {
                         className="w-full h-full object-contain"
                       />
                     ) : (
-                      <FingerPrintIcon className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400" />
+                      <FingerPrintIcon className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 dark:text-zinc-500" />
                     )}
                   </div>
                   <div className="p-2 sm:p-3">
-                    <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
+                    <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
                       {fp.original_filename}
                     </p>
                     <div className="mt-1.5 sm:mt-2 flex items-center justify-between flex-wrap gap-1">
@@ -728,7 +728,7 @@ export default function ExhibitDetail() {
                           e.preventDefault();
                           openProcessModal(fp.id);
                         }}
-                        className="mt-2 w-full inline-flex justify-center items-center rounded-lg bg-forensic-600 px-2 py-2 text-xs font-medium text-white hover:bg-forensic-500 active:bg-forensic-700 min-h-touch"
+                        className="mt-2 w-full inline-flex justify-center items-center rounded-lg bg-cyan-600 px-2 py-2 text-xs font-medium text-white hover:bg-cyan-500 active:bg-cyan-700 min-h-touch"
                       >
                         <PlayIcon className="h-3 w-3 mr-1" />
                         Process
@@ -746,70 +746,70 @@ export default function ExhibitDetail() {
       {showProcessModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setShowProcessModal(false)} />
+            <div className="fixed inset-0 bg-gray-500/75 dark:bg-zinc-950/80 transition-opacity" onClick={() => setShowProcessModal(false)} />
 
-            <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
-              <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+            <div className="relative transform overflow-hidden rounded-lg bg-white dark:bg-zinc-900 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+              <div className="bg-white dark:bg-zinc-900 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                 <div className="sm:flex sm:items-start">
-                  <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-forensic-100 sm:mx-0 sm:h-10 sm:w-10">
-                    <PlayIcon className="h-6 w-6 text-forensic-600" />
+                  <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-500/20 sm:mx-0 sm:h-10 sm:w-10">
+                    <PlayIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
                   </div>
                   <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left flex-1">
-                    <h3 className="text-base font-semibold leading-6 text-gray-900">
+                    <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white">
                       {processingFingerprintId ? 'Process Fingerprint' : `Process All Pending (${fingerprints.filter(fp => fp.status === 'pending').length})`}
                     </h3>
                     <div className="mt-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">
                         Enhancement Method
                       </label>
                       <div className="space-y-2">
-                        <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                        <label className="flex items-start p-3 border border-gray-200 dark:border-zinc-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors">
                           <input
                             type="radio"
                             name="enhancementMethod"
                             value="auto"
                             checked={selectedEnhancementMethod === 'auto'}
                             onChange={() => setSelectedEnhancementMethod('auto')}
-                            className="mt-1 h-4 w-4 text-forensic-600 focus:ring-forensic-500"
+                            className="mt-1 h-4 w-4 text-indigo-600 focus:ring-indigo-500"
                           />
                           <div className="ml-3">
-                            <span className="block text-sm font-medium text-gray-900">Auto (Recommended)</span>
-                            <span className="block text-xs text-gray-500">Uses AI enhancement when available, falls back to traditional methods</span>
+                            <span className="block text-sm font-medium text-gray-900 dark:text-white">Auto (Recommended)</span>
+                            <span className="block text-xs text-gray-500 dark:text-zinc-400">Uses AI enhancement when available, falls back to traditional methods</span>
                           </div>
                         </label>
 
-                        <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                        <label className="flex items-start p-3 border border-gray-200 dark:border-zinc-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors">
                           <input
                             type="radio"
                             name="enhancementMethod"
                             value="gemini"
                             checked={selectedEnhancementMethod === 'gemini'}
                             onChange={() => setSelectedEnhancementMethod('gemini')}
-                            className="mt-1 h-4 w-4 text-forensic-600 focus:ring-forensic-500"
+                            className="mt-1 h-4 w-4 text-indigo-600 focus:ring-indigo-500"
                           />
                           <div className="ml-3">
-                            <span className="block text-sm font-medium text-gray-900">
+                            <span className="block text-sm font-medium text-gray-900 dark:text-white">
                               AI Enhancement (Gemini)
-                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300">
                                 AI
                               </span>
                             </span>
-                            <span className="block text-xs text-gray-500">Advanced AI-powered reconstruction for smudged or damaged prints</span>
+                            <span className="block text-xs text-gray-500 dark:text-zinc-400">Advanced AI-powered reconstruction for smudged or damaged prints</span>
                           </div>
                         </label>
 
-                        <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                        <label className="flex items-start p-3 border border-gray-200 dark:border-zinc-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors">
                           <input
                             type="radio"
                             name="enhancementMethod"
                             value="opencv"
                             checked={selectedEnhancementMethod === 'opencv'}
                             onChange={() => setSelectedEnhancementMethod('opencv')}
-                            className="mt-1 h-4 w-4 text-forensic-600 focus:ring-forensic-500"
+                            className="mt-1 h-4 w-4 text-indigo-600 focus:ring-indigo-500"
                           />
                           <div className="ml-3">
-                            <span className="block text-sm font-medium text-gray-900">Traditional (OpenCV)</span>
-                            <span className="block text-xs text-gray-500">Classic image processing algorithms (Gabor filters, CLAHE)</span>
+                            <span className="block text-sm font-medium text-gray-900 dark:text-white">Traditional (OpenCV)</span>
+                            <span className="block text-xs text-gray-500 dark:text-zinc-400">Classic image processing algorithms (Gabor filters, CLAHE)</span>
                           </div>
                         </label>
                       </div>
@@ -817,12 +817,12 @@ export default function ExhibitDetail() {
                   </div>
                 </div>
               </div>
-              <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+              <div className="bg-gray-50 dark:bg-zinc-800 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
                 <button
                   type="button"
                   onClick={handleProcessFingerprint}
                   disabled={isProcessingInProgress}
-                  className="inline-flex w-full justify-center rounded-md bg-forensic-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-forensic-500 sm:ml-3 sm:w-auto disabled:opacity-50"
+                  className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto disabled:opacity-50"
                 >
                   {isProcessingInProgress ? (
                     <>
@@ -840,7 +840,7 @@ export default function ExhibitDetail() {
                   type="button"
                   onClick={() => setShowProcessModal(false)}
                   disabled={isProcessingInProgress}
-                  className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto disabled:opacity-50"
+                  className="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-zinc-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-zinc-600 hover:bg-gray-50 dark:hover:bg-zinc-600 sm:mt-0 sm:w-auto disabled:opacity-50"
                 >
                   Cancel
                 </button>

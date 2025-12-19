@@ -39,7 +39,7 @@ export default function CreateExhibitModal({ isOpen, onClose, onSubmit }: Create
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          <div className="fixed inset-0 bg-gray-500/75 dark:bg-zinc-950/80 transition-opacity" />
         </Transition.Child>
 
         <div className="fixed inset-0 z-10 overflow-y-auto">
@@ -53,11 +53,11 @@ export default function CreateExhibitModal({ isOpen, onClose, onSubmit }: Create
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+              <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white dark:bg-zinc-900 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
                 <div className="absolute right-0 top-0 pr-4 pt-4">
                   <button
                     type="button"
-                    className="rounded-md bg-white text-gray-400 hover:text-gray-500"
+                    className="rounded-md bg-white dark:bg-zinc-900 text-gray-400 dark:text-zinc-500 hover:text-gray-500 dark:hover:text-zinc-400"
                     onClick={onClose}
                   >
                     <span className="sr-only">Close</span>
@@ -68,12 +68,12 @@ export default function CreateExhibitModal({ isOpen, onClose, onSubmit }: Create
                 <form onSubmit={handleSubmit}>
                   <div className="sm:flex sm:items-start">
                     <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                      <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
+                      <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900 dark:text-white">
                         Add New Exhibit
                       </Dialog.Title>
                       <div className="mt-6 space-y-4">
                         <div>
-                          <label htmlFor="exhibit_number" className="block text-sm font-medium text-gray-700">
+                          <label htmlFor="exhibit_number" className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
                             Exhibit Number *
                           </label>
                           <input
@@ -82,13 +82,13 @@ export default function CreateExhibitModal({ isOpen, onClose, onSubmit }: Create
                             required
                             value={formData.exhibit_number}
                             onChange={(e) => setFormData({ ...formData, exhibit_number: e.target.value })}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-forensic-500 focus:ring-forensic-500 sm:text-sm"
+                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                             placeholder="e.g., Exhibit A, E-001"
                           />
                         </div>
 
                         <div>
-                          <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                          <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
                             Description
                           </label>
                           <textarea
@@ -96,13 +96,13 @@ export default function CreateExhibitModal({ isOpen, onClose, onSubmit }: Create
                             rows={2}
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-forensic-500 focus:ring-forensic-500 sm:text-sm"
+                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                             placeholder="Description of the exhibit"
                           />
                         </div>
 
                         <div>
-                          <label htmlFor="location_collected" className="block text-sm font-medium text-gray-700">
+                          <label htmlFor="location_collected" className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
                             Collection Location
                           </label>
                           <input
@@ -110,13 +110,13 @@ export default function CreateExhibitModal({ isOpen, onClose, onSubmit }: Create
                             id="location_collected"
                             value={formData.location_collected}
                             onChange={(e) => setFormData({ ...formData, location_collected: e.target.value })}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-forensic-500 focus:ring-forensic-500 sm:text-sm"
+                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                             placeholder="Where the evidence was collected"
                           />
                         </div>
 
                         <div>
-                          <label htmlFor="collector_name" className="block text-sm font-medium text-gray-700">
+                          <label htmlFor="collector_name" className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
                             Collector Name
                           </label>
                           <input
@@ -124,7 +124,7 @@ export default function CreateExhibitModal({ isOpen, onClose, onSubmit }: Create
                             id="collector_name"
                             value={formData.collector_name}
                             onChange={(e) => setFormData({ ...formData, collector_name: e.target.value })}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-forensic-500 focus:ring-forensic-500 sm:text-sm"
+                            className="mt-1 block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                             placeholder="Name of evidence collector"
                           />
                         </div>
@@ -135,13 +135,13 @@ export default function CreateExhibitModal({ isOpen, onClose, onSubmit }: Create
                   <div className="mt-6 sm:flex sm:flex-row-reverse gap-3">
                     <button
                       type="submit"
-                      className="inline-flex w-full justify-center rounded-md bg-forensic-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-forensic-500 sm:w-auto"
+                      className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:w-auto"
                     >
                       Add Exhibit
                     </button>
                     <button
                       type="button"
-                      className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                      className="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-zinc-800 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700 sm:mt-0 sm:w-auto"
                       onClick={onClose}
                     >
                       Cancel
