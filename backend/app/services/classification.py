@@ -213,38 +213,35 @@ CONFIDENCE GUIDELINES:
         Returns:
             Tuple of (is_genuine_fingerprint: bool, image_type: str, reason: str)
         """
-        PRE_CHECK_PROMPT = """Examine this image carefully. Your task is to determine
-if this image contains a REAL fingerprint impression that could be used for forensic analysis.
+        PRE_CHECK_PROMPT = """Examine this image carefully. Determine if this shows a fingerprint pattern.
 
 Answer with JSON ONLY:
 {
     "is_genuine_fingerprint": true or false,
-    "image_type": "biological_fingerprint|latent|partial|smudged|decorative|illustration|back_of_hand|document|noise|other",
+    "image_type": "fingerprint|latent|partial|smudged|decorative_on_object|icon|back_of_hand|document|noise|other",
     "reason": "one sentence explanation"
 }
 
-CLASSIFICATION RULES - Answer TRUE for:
-- "biological_fingerprint" = Direct friction ridge impressions from fingertips (inked, scanned, live-scan)
-- "latent" = Latent prints from crime scenes, developed prints, lifted prints
-- "partial" = Partial or incomplete fingerprints with some ridge detail
-- "smudged" = Smudged, blurred, or degraded prints that still show ridge structure
+Answer TRUE for any of these:
+- Inked fingerprints (rolled or plain impressions)
+- Scanned or digital fingerprint images
+- Latent prints (crime scene, developed, lifted)
+- Partial, smudged, blurred, or degraded fingerprints
+- High-contrast or processed fingerprint images
+- Forensic fingerprint photos
 
-Answer FALSE for:
-- "decorative" = Fingerprint patterns printed on clothing, gloves, fabric, or other objects
-- "illustration" = Drawn, computer-generated, artistic, or stylized fingerprint images
-- "back_of_hand" = Back/dorsal side of hands or fingers (NOT the fingertip pad)
-- "document" = Scanned documents, forms, text without fingerprints
-- "noise" = Random patterns, blank images, corrupted data
-- Palm prints (not fingerprints)
-- Photos showing hands/fingers but NOT the friction ridge surface of fingertips
+Answer FALSE only for these specific cases:
+- "decorative_on_object" = Fingerprint pattern physically printed ON gloves, clothing, fabric, or products
+- "icon" = Small fingerprint icons, logos, or UI elements
+- "back_of_hand" = Photo showing the BACK (dorsal) side of a hand with NO actual fingerprint
+- "document" = Text documents, forms without fingerprints
+- "noise" = Blank, corrupted, or random pattern images
 
-CRITICAL RULES:
-1. Blurred, smudged, partial, or low-quality REAL fingerprints - answer TRUE
-2. Photos of fingertips showing ridge detail - answer TRUE
-3. Fingerprint patterns on gloves, fabric, clothing, or decorative items - answer FALSE
-4. Back of hand/fingers even if showing artistic fingerprint overlay - answer FALSE
-5. If the fingerprint appears artificially perfect or uniform (no pores, perfect ridges) - likely decorative, answer FALSE
-6. Only answer TRUE for images that show ACTUAL friction ridge impressions from fingertip skin
+KEY DISTINCTION:
+- A standalone fingerprint image (even if stylized/processed) = TRUE
+- A fingerprint pattern printed ON an object (glove, shirt, product) = FALSE
+- If you see a hand/glove WITH a fingerprint design on it = FALSE
+- If you see JUST a fingerprint pattern (no hand/object visible) = TRUE
 """
 
         if self.client is None:
