@@ -158,11 +158,11 @@ class FingerprintProcessorService:
                 quality_score=quality_result.score,
             )
 
-            # Step 6.5: Cross-validation - Override VLM if presence detector was uncertain
+            # Step 6.5: Cross-validation - Override VLM if presence detector was very uncertain
             # This catches cases where VLM hallucinates fingerprints on non-fingerprint images
-            # Threshold raised to 0.75 to be more aggressive against hallucinations
-            if (presence_result.confidence < 0.75 and
-                classification_result.confidence > 0.5 and
+            # Only override if presence detector has very low confidence (below 0.35)
+            if (presence_result.confidence < 0.35 and
+                classification_result.confidence > 0.7 and
                 classification_result.pattern_type not in ["unknown", "not_present", "partial"]):
                 logger.warning(
                     f"Cross-validation override for {fingerprint_id}: "

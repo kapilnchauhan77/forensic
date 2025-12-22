@@ -465,11 +465,11 @@ class FingerprintPresenceDetector:
     to avoid wasting resources on images that don't contain fingerprints.
     """
 
-    # Thresholds for detection (stricter - prioritize rejecting false positives)
-    MIN_RIDGE_COHERENCE = 0.42  # Minimum coherence to consider ridge-like patterns (was 0.35)
-    MIN_RIDGE_COVERAGE = 0.15  # Minimum percentage of image with ridge patterns (15%, was 10%)
-    MIN_GRADIENT_MAGNITUDE = 12.0  # Minimum gradient for ridge detection (was 10.0)
-    CONFIDENCE_THRESHOLD = 0.60  # Minimum confidence to declare fingerprint present (was 0.50)
+    # Thresholds for detection (balanced - avoid both false positives and false negatives)
+    MIN_RIDGE_COHERENCE = 0.32  # Minimum coherence to consider ridge-like patterns
+    MIN_RIDGE_COVERAGE = 0.08  # Minimum percentage of image with ridge patterns (8%)
+    MIN_GRADIENT_MAGNITUDE = 8.0  # Minimum gradient for ridge detection
+    CONFIDENCE_THRESHOLD = 0.45  # Minimum confidence to declare fingerprint present
 
     def detect(self, image: np.ndarray) -> FingerprintPresenceResult:
         """

@@ -28,7 +28,8 @@
       "Bash(PGPASSWORD=postgres psql:*)",
       "Bash(python:*)",
       "Bash(celery:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(uvicorn:*)"
     ],
     "deny": [],
     "ask": []

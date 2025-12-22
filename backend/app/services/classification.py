@@ -1,12 +1,13 @@
-from google import genai
-from google.genai import types
-import json
-import hashlib
 import base64
-from typing import Dict, Any, Optional, List
+import hashlib
+import json
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
+
 import cv2
 import numpy as np
+from google import genai
+from google.genai import types
 
 from ..core.config import settings
 
@@ -14,6 +15,7 @@ from ..core.config import settings
 @dataclass
 class SingularPoint:
     """Represents a core or delta position"""
+
     x: int
     y: int
     point_type: str = ""  # For cores: "loop", "whorl", "spiral"
@@ -22,6 +24,7 @@ class SingularPoint:
 @dataclass
 class MinutiaeDetails:
     """Breakdown of minutiae by type"""
+
     ridge_endings: int = 0
     bifurcations: int = 0
     short_ridges: int = 0
@@ -65,7 +68,9 @@ class ClassificationResult:
 class FingerprintClassifier:
     """Gemini VLM-based fingerprint pattern classification with FBI/NCIC standards"""
 
-    PROMPT_VERSION = "3.2.0"  # Emphasized delta count as primary classifier to reduce whorl bias
+    PROMPT_VERSION = (
+        "3.2.0"  # Emphasized delta count as primary classifier to reduce whorl bias
+    )
 
     CLASSIFICATION_PROMPT = """You are a certified forensic fingerprint examiner analyzing a friction ridge impression according to FBI and NCIC standards.
 
@@ -294,14 +299,18 @@ CRITICAL RULES:
             response = self.client.models.generate_content(
                 model=self.model,
                 contents=contents,
-                config=types.GenerateContentConfig(
-                    temperature=0.0,  # Deterministic for yes/no
-                    max_output_tokens=256,
-                ),
             )
 
+            print("\n\n\n\n\nGEMINI RESPONSE")
+            print(response)
+            print("GEMINI RESPONSE\n\n\n\n\n")
             if not response.text:
-                return (False, "empty_response", "VLM returned empty response - rejecting as precaution")
+                # Empty response - allow through since presence detector already validated
+                return (
+                    True,
+                    "empty_response",
+                    "VLM returned empty response - allowing through based on presence detection",
+                )
 
             # Parse response
             response_text = response.text.strip()
@@ -313,6 +322,9 @@ CRITICAL RULES:
                 response_text = response_text.split("```")[1].split("```")[0]
 
             result = json.loads(response_text)
+            print("\n\n\n\n\nGEMINI RESPONSE RESULT")
+            print(result)
+            print("GEMINI RESPONSE RESULT\n\n\n\n\n")
 
             is_genuine = result.get("is_genuine_fingerprint", False)
             image_type = result.get("image_type", "unknown")
@@ -321,8 +333,12 @@ CRITICAL RULES:
             return (bool(is_genuine), str(image_type), str(reason))
 
         except json.JSONDecodeError as e:
-            # If we can't parse, be conservative and reject
-            return (False, "parse_error", f"Failed to parse VLM response: {e}")
+            # If we can't parse, allow through since presence detector already validated
+            return (
+                True,
+                "parse_error",
+                f"Failed to parse VLM response - allowing through: {e}",
+            )
         except Exception as e:
             # On any error, allow through to maintain existing behavior
             return (True, "error", f"Pre-classification error: {e}")
@@ -429,17 +445,37 @@ CRITICAL RULES:
 
             # Validate pattern type (now uses simplified: arch, loop, whorl)
             pattern_type = result_data.get("pattern_type", "unknown").lower()
-            valid_patterns = ["arch", "loop", "whorl", "unknown", "partial", "not_present"]
+            valid_patterns = [
+                "arch",
+                "loop",
+                "whorl",
+                "unknown",
+                "partial",
+                "not_present",
+            ]
             if pattern_type not in valid_patterns:
                 pattern_type = "unknown"
 
             # Validate pattern subtype
             pattern_subtype = result_data.get("pattern_subtype", "unknown").lower()
             valid_subtypes = [
-                "plain_arch", "tented_arch",
-                "ulnar_loop", "radial_loop", "central_pocket_loop", "double_loop", "nutant_loop",
-                "plain_whorl", "central_pocket_whorl", "double_loop_whorl", "accidental_whorl", "composite_whorl",
-                "scarred", "amputated", "bandaged", "unknown", "not_present"
+                "plain_arch",
+                "tented_arch",
+                "ulnar_loop",
+                "radial_loop",
+                "central_pocket_loop",
+                "double_loop",
+                "nutant_loop",
+                "plain_whorl",
+                "central_pocket_whorl",
+                "double_loop_whorl",
+                "accidental_whorl",
+                "composite_whorl",
+                "scarred",
+                "amputated",
+                "bandaged",
+                "unknown",
+                "not_present",
             ]
             if pattern_subtype not in valid_subtypes:
                 pattern_subtype = "unknown"
@@ -469,7 +505,22 @@ CRITICAL RULES:
 
             # NCIC code validation
             ncic_code = result_data.get("ncic_code", "UP").upper()
-            valid_ncic = ["AA", "TT", "PI", "PM", "PO", "II", "IM", "IO", "WI", "WM", "WO", "XX", "SR", "UP"]
+            valid_ncic = [
+                "AA",
+                "TT",
+                "PI",
+                "PM",
+                "PO",
+                "II",
+                "IM",
+                "IO",
+                "WI",
+                "WM",
+                "WO",
+                "XX",
+                "SR",
+                "UP",
+            ]
             if ncic_code not in valid_ncic:
                 ncic_code = "UP"
 
@@ -530,38 +581,22 @@ CRITICAL RULES:
                 minutiae_details=None,
                 ridge_flow_direction="mixed",
                 ridge_density=None,
-                raw_response={"error": str(e), "raw_text": response_text if 'response_text' in locals() else ""},
+                raw_response={
+                    "error": str(e),
+                    "raw_text": response_text if "response_text" in locals() else "",
+                },
                 prompt_version=self.PROMPT_VERSION,
                 prompt_hash=self.prompt_hash,
             )
         except Exception as e:
-            # Handle API errors
-            return ClassificationResult(
-                is_fingerprint=False,
-                evidence_type="unknown",
-                pattern_type="unknown",
-                pattern_subtype="unknown",
-                confidence=0.0,
-                detail_level="level_1",
-                rationale=f"VLM API error: {str(e)}",
-                alternative_patterns=[],
-                core_detected=False,
-                delta_detected=False,
-                ncic_code="UP",
-                henry_value=None,
-                ridge_count=None,
-                core_count=0,
-                delta_count=0,
-                core_positions=[],
-                delta_positions=[],
-                minutiae_count=None,
-                minutiae_details=None,
-                ridge_flow_direction="mixed",
-                ridge_density=None,
-                raw_response={"error": str(e)},
-                prompt_version=self.PROMPT_VERSION,
-                prompt_hash=self.prompt_hash,
+            # Handle API errors - fall back to OpenCV classification instead of rejecting
+            # This prevents API failures from causing false "no fingerprint" results
+            import logging
+
+            logging.getLogger(__name__).warning(
+                f"VLM API error, using fallback classification: {e}"
             )
+            return self._fallback_classification(image)
 
     def _fallback_classification(self, image: np.ndarray) -> ClassificationResult:
         """Fallback classification using OpenCV when VLM is unavailable"""
@@ -575,14 +610,16 @@ CRITICAL RULES:
         sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
 
         # Compute orientation
-        orientation = 0.5 * np.arctan2(2 * sobelx * sobely, sobelx ** 2 - sobely ** 2)
+        orientation = 0.5 * np.arctan2(2 * sobelx * sobely, sobelx**2 - sobely**2)
 
         # Analyze flow patterns
         h, w = gray.shape
         center_region = orientation[h // 3 : 2 * h // 3, w // 3 : 2 * w // 3]
 
         # Compute orientation histogram
-        hist, _ = np.histogram(center_region.flatten(), bins=18, range=(-np.pi / 2, np.pi / 2))
+        hist, _ = np.histogram(
+            center_region.flatten(), bins=18, range=(-np.pi / 2, np.pi / 2)
+        )
         dominant_orientation = np.argmax(hist)
 
         # Very basic heuristic classification
@@ -631,7 +668,10 @@ CRITICAL RULES:
             minutiae_details=None,
             ridge_flow_direction=ridge_flow,
             ridge_density=None,
-            raw_response={"method": "fallback_opencv", "orientation_variance": float(orientation_variance)},
+            raw_response={
+                "method": "fallback_opencv",
+                "orientation_variance": float(orientation_variance),
+            },
             prompt_version="fallback",
             prompt_hash="opencv_fallback",
         )
@@ -658,18 +698,36 @@ CRITICAL RULES:
             overlay, label, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2
         )
         cv2.putText(
-            overlay, confidence_text, (20, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1
+            overlay,
+            confidence_text,
+            (20, 70),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            (255, 255, 255),
+            1,
         )
 
         # Add core/delta indicators
         if classification_result.core_detected:
             cv2.putText(
-                overlay, "Core: Detected", (20, h - 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1
+                overlay,
+                "Core: Detected",
+                (20, h - 50),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0, 255, 255),
+                1,
             )
 
         if classification_result.delta_detected:
             cv2.putText(
-                overlay, "Delta: Detected", (20, h - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 1
+                overlay,
+                "Delta: Detected",
+                (20, h - 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (255, 255, 0),
+                1,
             )
 
         # Draw approximate center region

@@ -2,13 +2,14 @@
 Gemini-based fingerprint image enhancement using Google's generative AI.
 Uses the gemini-3-pro-image-preview model for forensic-grade image reconstruction.
 """
+
 import base64
 import logging
-from typing import Optional
 from dataclasses import dataclass
-import numpy as np
-import cv2
+from typing import Optional
 
+import cv2
+import numpy as np
 from google import genai
 from google.genai import types
 
@@ -20,6 +21,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class GeminiEnhancementResult:
     """Result of Gemini-based image enhancement"""
+
     enhanced_image: np.ndarray
     original_image: np.ndarray
     success: bool
@@ -42,7 +44,7 @@ Enhance this fingerprint image for forensic analysis by:
 5. Preserving the original ridge flow and pattern characteristics
 
 Important: Do NOT alter the fundamental pattern structure. Only enhance visibility and clarity.
-Return the enhanced fingerprint image suitable for forensic identification."""
+Return the full image with enhanced fingerprint image suitable for forensic identification."""
 
     def __init__(self):
         self.client = None
@@ -78,10 +80,10 @@ Return the enhanced fingerprint image suitable for forensic identification."""
 
     def _image_to_base64(self, image: np.ndarray) -> str:
         """Convert numpy image array to base64 string"""
-        success, encoded = cv2.imencode('.png', image)
+        success, encoded = cv2.imencode(".png", image)
         if not success:
             raise ValueError("Failed to encode image to PNG")
-        return base64.b64encode(encoded.tobytes()).decode('utf-8')
+        return base64.b64encode(encoded.tobytes()).decode("utf-8")
 
     def _base64_to_image(self, b64_string: str) -> np.ndarray:
         """Convert base64 string to numpy image array"""
@@ -135,7 +137,7 @@ Return the enhanced fingerprint image suitable for forensic identification."""
                     parts=[
                         image_part,
                         types.Part.from_text(text=prompt_text),
-                    ]
+                    ],
                 ),
             ]
 
@@ -147,20 +149,16 @@ Return the enhanced fingerprint image suitable for forensic identification."""
                 response_modalities=["TEXT", "IMAGE"],
                 safety_settings=[
                     types.SafetySetting(
-                        category="HARM_CATEGORY_HATE_SPEECH",
-                        threshold="OFF"
+                        category="HARM_CATEGORY_HATE_SPEECH", threshold="OFF"
                     ),
                     types.SafetySetting(
-                        category="HARM_CATEGORY_DANGEROUS_CONTENT",
-                        threshold="OFF"
+                        category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="OFF"
                     ),
                     types.SafetySetting(
-                        category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                        threshold="OFF"
+                        category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="OFF"
                     ),
                     types.SafetySetting(
-                        category="HARM_CATEGORY_HARASSMENT",
-                        threshold="OFF"
+                        category="HARM_CATEGORY_HARASSMENT", threshold="OFF"
                     ),
                 ],
             )
@@ -175,54 +173,73 @@ Return the enhanced fingerprint image suitable for forensic identification."""
                 config=generate_config,
             ):
                 # Check for image in response
-                if hasattr(chunk, 'candidates') and chunk.candidates:
+                if hasattr(chunk, "candidates") and chunk.candidates:
                     for candidate in chunk.candidates:
-                        if hasattr(candidate, 'content') and candidate.content:
+                        if hasattr(candidate, "content") and candidate.content:
                             for part in candidate.content.parts:
                                 try:
-                                    if hasattr(part, 'inline_data') and part.inline_data:
+                                    if (
+                                        hasattr(part, "inline_data")
+                                        and part.inline_data
+                                    ):
                                         # Extract image data
                                         img_data = part.inline_data.data
                                         data_len = len(img_data) if img_data else 0
-                                        logger.info(f"Received inline_data, type: {type(img_data)}, length: {data_len}")
+                                        logger.info(
+                                            f"Received inline_data, type: {type(img_data)}, length: {data_len}"
+                                        )
 
                                         if isinstance(img_data, str):
                                             # Base64 string
-                                            enhanced_image = self._base64_to_image(img_data)
+                                            enhanced_image = self._base64_to_image(
+                                                img_data
+                                            )
                                         elif isinstance(img_data, bytes):
                                             # Check if data starts with JPEG or PNG magic bytes
-                                            if img_data[:2] == b'\xff\xd8':
+                                            if img_data[:2] == b"\xff\xd8":
                                                 logger.info("Detected JPEG format")
-                                            elif img_data[:8] == b'\x89PNG\r\n\x1a\n':
+                                            elif img_data[:8] == b"\x89PNG\r\n\x1a\n":
                                                 logger.info("Detected PNG format")
                                             else:
                                                 # Might be base64 encoded as bytes - try to decode
-                                                logger.info(f"First 20 bytes: {img_data[:20]}")
+                                                logger.info(
+                                                    f"First 20 bytes: {img_data[:20]}"
+                                                )
                                                 try:
                                                     decoded = base64.b64decode(img_data)
                                                     img_data = decoded
-                                                    logger.info(f"Decoded base64, new length: {len(img_data)}")
+                                                    logger.info(
+                                                        f"Decoded base64, new length: {len(img_data)}"
+                                                    )
                                                 except Exception:
                                                     pass  # Not base64
 
                                             # Try to decode image
                                             nparr = np.frombuffer(img_data, np.uint8)
-                                            enhanced_image = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)
+                                            enhanced_image = cv2.imdecode(
+                                                nparr, cv2.IMREAD_UNCHANGED
+                                            )
                                         else:
-                                            logger.warning(f"Unknown data type: {type(img_data)}")
+                                            logger.warning(
+                                                f"Unknown data type: {type(img_data)}"
+                                            )
 
                                         if enhanced_image is not None:
-                                            logger.info(f"Image decoded successfully, shape: {enhanced_image.shape}")
+                                            logger.info(
+                                                f"Image decoded successfully, shape: {enhanced_image.shape}"
+                                            )
                                         else:
                                             logger.warning("cv2.imdecode returned None")
-                                    elif hasattr(part, 'text') and part.text:
+                                    elif hasattr(part, "text") and part.text:
                                         text_response += part.text
                                 except Exception as part_error:
-                                    logger.warning(f"Error processing part: {part_error}")
+                                    logger.warning(
+                                        f"Error processing part: {part_error}"
+                                    )
 
                 # Also check direct text attribute (wrapped in try-catch as .text throws on image parts)
                 try:
-                    if hasattr(chunk, 'text') and chunk.text:
+                    if hasattr(chunk, "text") and chunk.text:
                         text_response += chunk.text
                 except Exception:
                     # Expected when chunk contains image data instead of text
@@ -243,7 +260,9 @@ Return the enhanced fingerprint image suitable for forensic identification."""
 
             # Resize to match original if needed
             if enhanced_image.shape != gray.shape:
-                enhanced_image = cv2.resize(enhanced_image, (gray.shape[1], gray.shape[0]))
+                enhanced_image = cv2.resize(
+                    enhanced_image, (gray.shape[1], gray.shape[0])
+                )
 
             logger.info("Gemini enhancement completed successfully")
 
@@ -257,8 +276,16 @@ Return the enhanced fingerprint image suitable for forensic identification."""
         except Exception as e:
             logger.error(f"Gemini enhancement failed: {e}")
             return GeminiEnhancementResult(
-                enhanced_image=image if len(image.shape) == 2 else cv2.cvtColor(image, cv2.COLOR_BGR2GRAY),
-                original_image=image if len(image.shape) == 2 else cv2.cvtColor(image, cv2.COLOR_BGR2GRAY),
+                enhanced_image=(
+                    image
+                    if len(image.shape) == 2
+                    else cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                ),
+                original_image=(
+                    image
+                    if len(image.shape) == 2
+                    else cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                ),
                 success=False,
                 error_message=str(e),
             )
@@ -274,10 +301,10 @@ Return the enhanced fingerprint image suitable for forensic identification."""
         so this wraps the sync method.
         """
         import asyncio
+
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(
-            None,
-            lambda: self.enhance(image, custom_prompt)
+            None, lambda: self.enhance(image, custom_prompt)
         )
 
 
