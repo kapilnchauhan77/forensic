@@ -213,35 +213,28 @@ CONFIDENCE GUIDELINES:
         Returns:
             Tuple of (is_genuine_fingerprint: bool, image_type: str, reason: str)
         """
-        PRE_CHECK_PROMPT = """Examine this image carefully. Determine if this shows a fingerprint pattern.
+        PRE_CHECK_PROMPT = """Does this image contain friction ridge patterns (fingerprint)?
 
 Answer with JSON ONLY:
 {
     "is_genuine_fingerprint": true or false,
-    "image_type": "fingerprint|latent|partial|smudged|decorative_on_object|icon|back_of_hand|document|noise|other",
+    "image_type": "fingerprint|partial|smudged|no_fingerprint|other",
     "reason": "one sentence explanation"
 }
 
-Answer TRUE for any of these:
-- Inked fingerprints (rolled or plain impressions)
-- Scanned or digital fingerprint images
-- Latent prints (crime scene, developed, lifted)
-- Partial, smudged, blurred, or degraded fingerprints
-- High-contrast or processed fingerprint images
-- Forensic fingerprint photos
+SIMPLE RULE: If you can see ridge patterns (the lines that make up a fingerprint), answer TRUE.
 
-Answer FALSE only for these specific cases:
-- "decorative_on_object" = Fingerprint pattern physically printed ON gloves, clothing, fabric, or products
-- "icon" = Small fingerprint icons, logos, or UI elements
-- "back_of_hand" = Photo showing the BACK (dorsal) side of a hand with NO actual fingerprint
-- "document" = Text documents, forms without fingerprints
-- "noise" = Blank, corrupted, or random pattern images
+Answer TRUE if:
+- There are visible ridge patterns in the image
+- The image shows any type of fingerprint (clear, blurry, partial, processed)
+- Even if the image quality is poor or stylized
 
-KEY DISTINCTION:
-- A standalone fingerprint image (even if stylized/processed) = TRUE
-- A fingerprint pattern printed ON an object (glove, shirt, product) = FALSE
-- If you see a hand/glove WITH a fingerprint design on it = FALSE
-- If you see JUST a fingerprint pattern (no hand/object visible) = TRUE
+Answer FALSE only if:
+- There are NO ridge patterns visible at all
+- The image is completely blank or corrupted
+- The image shows only text, documents, or unrelated content
+
+IMPORTANT: Focus ONLY on whether ridge patterns exist. Ignore any background, context, or what the fingerprint might be "on". If ridges are visible, answer TRUE.
 """
 
         if self.client is None:
