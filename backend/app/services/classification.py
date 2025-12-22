@@ -214,36 +214,37 @@ CONFIDENCE GUIDELINES:
             Tuple of (is_genuine_fingerprint: bool, image_type: str, reason: str)
         """
         PRE_CHECK_PROMPT = """Examine this image carefully. Your task is to determine
-if this image contains fingerprint or not
+if this image contains a REAL fingerprint impression that could be used for forensic analysis.
 
 Answer with JSON ONLY:
 {
     "is_genuine_fingerprint": true or false,
-    "image_type": "biological_fingerprint|photo_with_ridges|latent|partial|smudged|illustration|graphic|document|noise|other",
+    "image_type": "biological_fingerprint|latent|partial|smudged|decorative|illustration|back_of_hand|document|noise|other",
     "reason": "one sentence explanation"
 }
 
 CLASSIFICATION RULES - Answer TRUE for:
-- "biological_fingerprint" = Direct friction ridge impressions (inked, scanned, live-scan)
-- "photo_with_ridges" = Photographs of fingers/hands showing visible ridge patterns
+- "biological_fingerprint" = Direct friction ridge impressions from fingertips (inked, scanned, live-scan)
 - "latent" = Latent prints from crime scenes, developed prints, lifted prints
 - "partial" = Partial or incomplete fingerprints with some ridge detail
 - "smudged" = Smudged, blurred, or degraded prints that still show ridge structure
-- "illustration" or "graphic" = Drawn, computer-generated, or artistic fingerprint images
-  (stock images, icons, logos, digital art, fingerprint graphics for decoration)
 
 Answer FALSE for:
-- Palm image
-- No fingerprint is present
-- there is no finger or fingerprint
+- "decorative" = Fingerprint patterns printed on clothing, gloves, fabric, or other objects
+- "illustration" = Drawn, computer-generated, artistic, or stylized fingerprint images
+- "back_of_hand" = Back/dorsal side of hands or fingers (NOT the fingertip pad)
 - "document" = Scanned documents, forms, text without fingerprints
 - "noise" = Random patterns, blank images, corrupted data
+- Palm prints (not fingerprints)
+- Photos showing hands/fingers but NOT the friction ridge surface of fingertips
 
-NOTE
-1. Blurred, smudged, partial, or low-quality prints are STILL fingerprints - answer TRUE
-2. Macro photos of fingers showing ridge detail ARE valid fingerprints - answer TRUE
-3. Make sure to only only say TRUE if there is a fingerprint there, do not hallucinate, answer FALSE if unsure, this is really important
-4. If it is back side of finger or palm or hand and no fingerprint answer FALSE, do not answer TRUE
+CRITICAL RULES:
+1. Blurred, smudged, partial, or low-quality REAL fingerprints - answer TRUE
+2. Photos of fingertips showing ridge detail - answer TRUE
+3. Fingerprint patterns on gloves, fabric, clothing, or decorative items - answer FALSE
+4. Back of hand/fingers even if showing artistic fingerprint overlay - answer FALSE
+5. If the fingerprint appears artificially perfect or uniform (no pores, perfect ridges) - likely decorative, answer FALSE
+6. Only answer TRUE for images that show ACTUAL friction ridge impressions from fingertip skin
 """
 
         if self.client is None:
