@@ -243,6 +243,7 @@ NOTE
 1. Blurred, smudged, partial, or low-quality prints are STILL fingerprints - answer TRUE
 2. Macro photos of fingers showing ridge detail ARE valid fingerprints - answer TRUE
 3. Make sure to only only say TRUE if there is a fingerprint there, do not hallucinate, answer FALSE if unsure, this is really important
+4. If it is back side of finger or palm or hand and no fingerprint answer FALSE, do not answer TRUE
 """
 
         if self.client is None:
