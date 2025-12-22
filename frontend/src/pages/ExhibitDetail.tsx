@@ -40,6 +40,11 @@ export default function ExhibitDetail() {
   const [processingFingerprintId, setProcessingFingerprintId] = useState<string | null>(null);
   const [isProcessingInProgress, setIsProcessingInProgress] = useState(false);
 
+  // Selection state for bulk reprocess
+  const [selectedFingerprints, setSelectedFingerprints] = useState<Set<string>>(new Set());
+  const [showReprocessModal, setShowReprocessModal] = useState(false);
+  const [isReprocessingInProgress, setIsReprocessingInProgress] = useState(false);
+
   useEffect(() => {
     if (exhibitId) {
       fetchData();
@@ -278,6 +283,65 @@ export default function ExhibitDetail() {
 
   const handleProcessAll = () => {
     openProcessModal(null);
+  };
+
+  // Selection functions for bulk reprocess
+  const toggleFingerprintSelection = (fingerprintId: string) => {
+    setSelectedFingerprints(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(fingerprintId)) {
+        newSet.delete(fingerprintId);
+      } else {
+        newSet.add(fingerprintId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedFingerprints.size === fingerprints.length) {
+      setSelectedFingerprints(new Set());
+    } else {
+      setSelectedFingerprints(new Set(fingerprints.map(fp => fp.id)));
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedFingerprints(new Set());
+  };
+
+  const openReprocessModal = () => {
+    if (selectedFingerprints.size === 0) {
+      toast.error('No fingerprints selected');
+      return;
+    }
+    setShowReprocessModal(true);
+  };
+
+  const handleReprocessSelected = async () => {
+    if (selectedFingerprints.size === 0) {
+      toast.error('No fingerprints selected');
+      return;
+    }
+
+    setIsReprocessingInProgress(true);
+    try {
+      const selectedIds = Array.from(selectedFingerprints);
+      for (const fpId of selectedIds) {
+        await fingerprintsApi.reprocess(fpId, {
+          enhancement_method: selectedEnhancementMethod,
+          force: true,
+        });
+      }
+      toast.success(`Reprocessing started for ${selectedIds.length} fingerprint(s)`);
+      setShowReprocessModal(false);
+      clearSelection();
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to start reprocessing');
+    } finally {
+      setIsReprocessingInProgress(false);
+    }
   };
 
   const handleDeleteFingerprint = async (fingerprintId: string, filename: string) => {
@@ -644,16 +708,47 @@ export default function ExhibitDetail() {
       {/* Fingerprints List */}
       <div className="bg-white dark:bg-zinc-900 shadow dark:shadow-zinc-900/50 rounded-lg border border-gray-200 dark:border-zinc-800">
         <div className="px-4 py-4 sm:px-6 sm:py-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-b border-gray-200 dark:border-zinc-800">
-          <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">Fingerprints</h2>
-          {fingerprints.some(fp => fp.status === 'pending') && (
-            <button
-              onClick={handleProcessAll}
-              className="inline-flex items-center justify-center rounded-lg bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-cyan-500 active:bg-cyan-700 min-h-touch w-full sm:w-auto"
-            >
-              <PlayIcon className="-ml-0.5 mr-1.5 h-5 w-5" />
-              Process All Pending
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {fingerprints.length > 0 && (
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedFingerprints.size === fingerprints.length && fingerprints.length > 0}
+                  onChange={toggleSelectAll}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 rounded border-gray-300 dark:border-zinc-600"
+                />
+                <span className="ml-2 text-xs sm:text-sm text-gray-600 dark:text-zinc-400">
+                  Select All
+                </span>
+              </label>
+            )}
+            <h2 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">Fingerprints</h2>
+            {selectedFingerprints.size > 0 && (
+              <span className="text-xs sm:text-sm text-indigo-600 dark:text-indigo-400">
+                ({selectedFingerprints.size} selected)
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+            {selectedFingerprints.size > 0 && (
+              <button
+                onClick={openReprocessModal}
+                className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 active:bg-indigo-700 min-h-touch w-full sm:w-auto"
+              >
+                <ArrowPathIcon className="-ml-0.5 mr-1.5 h-5 w-5" />
+                Reprocess Selected ({selectedFingerprints.size})
+              </button>
+            )}
+            {fingerprints.some(fp => fp.status === 'pending') && (
+              <button
+                onClick={handleProcessAll}
+                className="inline-flex items-center justify-center rounded-lg bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-cyan-500 active:bg-cyan-700 min-h-touch w-full sm:w-auto"
+              >
+                <PlayIcon className="-ml-0.5 mr-1.5 h-5 w-5" />
+                Process All Pending
+              </button>
+            )}
+          </div>
         </div>
 
         {fingerprints.length === 0 ? (
@@ -669,8 +764,23 @@ export default function ExhibitDetail() {
             {fingerprints.map((fp) => (
               <div
                 key={fp.id}
-                className="relative bg-gray-50 dark:bg-zinc-800 rounded-lg overflow-hidden hover:shadow-md dark:hover:shadow-zinc-900/50 active:shadow-inner transition-shadow"
+                className={`relative bg-gray-50 dark:bg-zinc-800 rounded-lg overflow-hidden hover:shadow-md dark:hover:shadow-zinc-900/50 active:shadow-inner transition-shadow ${
+                  selectedFingerprints.has(fp.id) ? 'ring-2 ring-indigo-500 dark:ring-indigo-400' : ''
+                }`}
               >
+                {/* Selection checkbox */}
+                <label
+                  className="absolute top-2 left-2 z-10 cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedFingerprints.has(fp.id)}
+                    onChange={() => toggleFingerprintSelection(fp.id)}
+                    className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 rounded border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 shadow-md"
+                  />
+                </label>
+
                 {/* Delete button */}
                 <button
                   onClick={(e) => {
@@ -840,6 +950,117 @@ export default function ExhibitDetail() {
                   type="button"
                   onClick={() => setShowProcessModal(false)}
                   disabled={isProcessingInProgress}
+                  className="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-zinc-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-zinc-600 hover:bg-gray-50 dark:hover:bg-zinc-600 sm:mt-0 sm:w-auto disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reprocess Selected Modal */}
+      {showReprocessModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div className="fixed inset-0 bg-gray-500/75 dark:bg-zinc-950/80 transition-opacity" onClick={() => setShowReprocessModal(false)} />
+
+            <div className="relative transform overflow-hidden rounded-lg bg-white dark:bg-zinc-900 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+              <div className="bg-white dark:bg-zinc-900 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-500/20 sm:mx-0 sm:h-10 sm:w-10">
+                    <ArrowPathIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left flex-1">
+                    <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white">
+                      Reprocess Selected ({selectedFingerprints.size})
+                    </h3>
+                    <p className="mt-2 text-sm text-gray-500 dark:text-zinc-400">
+                      This will reprocess the selected fingerprints with the chosen enhancement method, replacing existing results.
+                    </p>
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">
+                        Enhancement Method
+                      </label>
+                      <div className="space-y-2">
+                        <label className="flex items-start p-3 border border-gray-200 dark:border-zinc-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors">
+                          <input
+                            type="radio"
+                            name="reprocessEnhancementMethod"
+                            value="auto"
+                            checked={selectedEnhancementMethod === 'auto'}
+                            onChange={() => setSelectedEnhancementMethod('auto')}
+                            className="mt-1 h-4 w-4 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <div className="ml-3">
+                            <span className="block text-sm font-medium text-gray-900 dark:text-white">Auto (Recommended)</span>
+                            <span className="block text-xs text-gray-500 dark:text-zinc-400">Uses AI enhancement when available, falls back to traditional methods</span>
+                          </div>
+                        </label>
+
+                        <label className="flex items-start p-3 border border-gray-200 dark:border-zinc-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors">
+                          <input
+                            type="radio"
+                            name="reprocessEnhancementMethod"
+                            value="gemini"
+                            checked={selectedEnhancementMethod === 'gemini'}
+                            onChange={() => setSelectedEnhancementMethod('gemini')}
+                            className="mt-1 h-4 w-4 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <div className="ml-3">
+                            <span className="block text-sm font-medium text-gray-900 dark:text-white">
+                              AI Enhancement (Gemini)
+                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300">
+                                AI
+                              </span>
+                            </span>
+                            <span className="block text-xs text-gray-500 dark:text-zinc-400">Advanced AI-powered reconstruction for smudged or damaged prints</span>
+                          </div>
+                        </label>
+
+                        <label className="flex items-start p-3 border border-gray-200 dark:border-zinc-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors">
+                          <input
+                            type="radio"
+                            name="reprocessEnhancementMethod"
+                            value="opencv"
+                            checked={selectedEnhancementMethod === 'opencv'}
+                            onChange={() => setSelectedEnhancementMethod('opencv')}
+                            className="mt-1 h-4 w-4 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <div className="ml-3">
+                            <span className="block text-sm font-medium text-gray-900 dark:text-white">Traditional (OpenCV)</span>
+                            <span className="block text-xs text-gray-500 dark:text-zinc-400">Classic image processing algorithms (Gabor filters, CLAHE)</span>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 dark:bg-zinc-800 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                <button
+                  type="button"
+                  onClick={handleReprocessSelected}
+                  disabled={isReprocessingInProgress}
+                  className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto disabled:opacity-50"
+                >
+                  {isReprocessingInProgress ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      Reprocessing...
+                    </>
+                  ) : (
+                    <>
+                      <ArrowPathIcon className="h-4 w-4 mr-2" />
+                      Start Reprocessing
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowReprocessModal(false)}
+                  disabled={isReprocessingInProgress}
                   className="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-zinc-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-zinc-600 hover:bg-gray-50 dark:hover:bg-zinc-600 sm:mt-0 sm:w-auto disabled:opacity-50"
                 >
                   Cancel

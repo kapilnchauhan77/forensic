@@ -74,28 +74,6 @@ class FingerprintClassifier:
 
     CLASSIFICATION_PROMPT = """You are a certified forensic fingerprint examiner analyzing a friction ridge impression according to FBI and NCIC standards.
 
-## CRITICAL PRE-SCREENING (MUST DO FIRST)
-
-Before ANY analysis, determine if this image contains a GENUINE BIOLOGICAL friction ridge impression from a human finger/palm.
-
-REJECT and return is_fingerprint=false, pattern_type="not_present", confidence=0.0 if ANY of these apply:
-- Digital graphics, illustrations, drawings, or artistic renderings of fingerprints
-- Stock images, icons, or symbols depicting fingerprints
-- Fingerprint graphics overlaid on photographs
-- Computer-generated or synthetic fingerprint patterns
-- Photographs of objects, people, scenes, or anything that is NOT a direct capture of friction ridges
-- Images where no actual biological fingerprint is visible
-- Scans of printed/drawn fingerprints (not genuine impressions)
-
-ONLY PROCEED with classification if:
-- The image shows an ACTUAL biological friction ridge impression
-- The ridges are from a real human finger captured via scanning, photography of a latent print, or similar forensic capture method
-- You can see genuine friction ridge detail (not artistic/stylized patterns)
-
-If rejected, explain in rationale WHY this is not a genuine biological fingerprint (e.g., "Image contains a digital illustration/graphic of a fingerprint, not a genuine biological impression").
-
-If this IS a genuine biological friction ridge impression, perform comprehensive analysis:
-
 ## 1. EVIDENCE TYPE ASSESSMENT
 Determine how this print was deposited:
 - latent: Invisible/barely visible impression from perspiration/oils (most common in casework)
@@ -235,36 +213,36 @@ CONFIDENCE GUIDELINES:
         Returns:
             Tuple of (is_genuine_fingerprint: bool, image_type: str, reason: str)
         """
-        PRE_CHECK_PROMPT = """Examine this image carefully. Your ONLY task is to determine
-if this image contains a GENUINE BIOLOGICAL fingerprint.
+        PRE_CHECK_PROMPT = """Examine this image carefully. Your task is to determine
+if this image contains fingerprint or not
 
 Answer with JSON ONLY:
 {
     "is_genuine_fingerprint": true or false,
-    "image_type": "biological_fingerprint|photo|illustration|graphic|icon|document|noise|other",
+    "image_type": "biological_fingerprint|photo_with_ridges|latent|partial|smudged|illustration|graphic|document|noise|other",
     "reason": "one sentence explanation"
 }
 
-CLASSIFICATION RULES:
-- "biological_fingerprint" = ACTUAL friction ridge impression from human skin
-  (latent prints, inked prints, scanned prints, crime scene lifts, developed prints)
-
+CLASSIFICATION RULES - Answer TRUE for:
+- "biological_fingerprint" = Direct friction ridge impressions (inked, scanned, live-scan)
+- "photo_with_ridges" = Photographs of fingers/hands showing visible ridge patterns
+- "latent" = Latent prints from crime scenes, developed prints, lifted prints
+- "partial" = Partial or incomplete fingerprints with some ridge detail
+- "smudged" = Smudged, blurred, or degraded prints that still show ridge structure
 - "illustration" or "graphic" = Drawn, computer-generated, or artistic fingerprint images
-  (stock images, icons, logos, overlays on photos, digital art, fingerprint graphics)
+  (stock images, icons, logos, digital art, fingerprint graphics for decoration)
 
-- "photo" = Photograph of people, objects, scenes, hands (NOT a direct fingerprint capture)
-
-- "document" = Scanned documents, forms, text
-
+Answer FALSE for:
+- "document" = Scanned documents, forms, text without fingerprints
 - "noise" = Random patterns, blank images, corrupted data
 
-- "other" = Anything else that is NOT a genuine fingerprint
-
-CRITICAL RULES:
-1. When uncertain, answer false - it's better to reject than misclassify
-2. Only say true for ACTUAL biological friction ridge impressions
-3. Fingerprint GRAPHICS/ILLUSTRATIONS overlaid on other images are NOT genuine - answer false
-4. Photos showing hands or fingers are NOT fingerprints unless showing actual ridge detail capture
+CRITICAL RULES FOR FORENSIC ANALYSIS:
+1. When uncertain, answer TRUE - in forensics, it's better to analyze than miss evidence
+2. ANY image showing friction ridge detail should be classified as TRUE
+3. Blurred, smudged, partial, or low-quality prints are STILL fingerprints - answer TRUE
+4. Macro photos of fingers showing ridge detail ARE valid fingerprints - answer TRUE
+5. Only reject obvious non-fingerprint content (graphics, icons, unrelated photos, noise)
+6. The goal is forensic analysis - accept anything that MIGHT contain ridge information
 """
 
         if self.client is None:
