@@ -233,16 +233,15 @@ CLASSIFICATION RULES - Answer TRUE for:
   (stock images, icons, logos, digital art, fingerprint graphics for decoration)
 
 Answer FALSE for:
+- Palm image
+- No fingerprint is present
+- there is no finger or fingerprint
 - "document" = Scanned documents, forms, text without fingerprints
 - "noise" = Random patterns, blank images, corrupted data
 
-CRITICAL RULES FOR FORENSIC ANALYSIS:
-1. When uncertain, answer TRUE - in forensics, it's better to analyze than miss evidence
-2. ANY image showing friction ridge detail should be classified as TRUE
-3. Blurred, smudged, partial, or low-quality prints are STILL fingerprints - answer TRUE
-4. Macro photos of fingers showing ridge detail ARE valid fingerprints - answer TRUE
-5. Only reject obvious non-fingerprint content (graphics, icons, unrelated photos, noise)
-6. The goal is forensic analysis - accept anything that MIGHT contain ridge information
+NOTE
+1. Blurred, smudged, partial, or low-quality prints are STILL fingerprints - answer TRUE
+2. Macro photos of fingers showing ridge detail ARE valid fingerprints - answer TRUE
 """
 
         if self.client is None:

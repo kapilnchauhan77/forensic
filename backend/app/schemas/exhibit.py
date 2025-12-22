@@ -27,6 +27,7 @@ class ExhibitUpdate(BaseModel):
 class FingerprintSummary(BaseModel):
     id: str
     original_filename: str
+    original_url: Optional[str] = None
     status: str
     quality_score: Optional[float] = None
     pattern_type: Optional[str] = None

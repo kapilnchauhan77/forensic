@@ -17,6 +17,7 @@ from ...schemas.exhibit import (
     FingerprintSummary,
 )
 from ...services.audit import AuditService
+from ...services.storage import StorageService
 
 router = APIRouter()
 
@@ -91,17 +92,22 @@ async def get_exhibit(
             detail="Exhibit not found",
         )
 
-    fingerprint_summaries = [
-        FingerprintSummary(
-            id=fp.id,
-            original_filename=fp.original_filename,
-            status=fp.status.value,
-            quality_score=fp.quality_score,
-            pattern_type=fp.pattern_type.value if fp.pattern_type else None,
-            pattern_confidence=fp.pattern_confidence,
+    # Generate presigned URLs for fingerprint images
+    storage = StorageService()
+    fingerprint_summaries = []
+    for fp in exhibit.fingerprints:
+        original_url = await storage.get_presigned_url(fp.original_storage_path) if fp.original_storage_path else None
+        fingerprint_summaries.append(
+            FingerprintSummary(
+                id=fp.id,
+                original_filename=fp.original_filename,
+                original_url=original_url,
+                status=fp.status.value,
+                quality_score=fp.quality_score,
+                pattern_type=fp.pattern_type.value if fp.pattern_type else None,
+                pattern_confidence=fp.pattern_confidence,
+            )
         )
-        for fp in exhibit.fingerprints
-    ]
 
     return ExhibitDetailResponse(
         id=exhibit.id,
