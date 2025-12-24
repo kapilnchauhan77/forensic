@@ -9,6 +9,7 @@ import CaseDetail from './pages/CaseDetail';
 import ExhibitDetail from './pages/ExhibitDetail';
 import FingerprintViewer from './pages/FingerprintViewer';
 import Settings from './pages/Settings';
+import Quiz from './pages/Quiz';
 import About from './pages/About';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -51,6 +52,7 @@ function App() {
                 <Route path="/exhibits/:exhibitId" element={<ExhibitDetail />} />
                 <Route path="/fingerprints/:fingerprintId" element={<FingerprintViewer />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/quiz" element={<Quiz />} />
                 <Route path="/about" element={<About />} />
               </Routes>
             </Layout>

@@ -9,6 +9,7 @@ import {
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
   ChevronRightIcon,
+  PuzzlePieceIcon,
   InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../hooks/useAuth';
@@ -20,6 +21,7 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: HomeIcon },
   { name: 'Cases', href: '/cases', icon: FolderIcon },
   { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
+  { name: 'Quiz', href: '/quiz', icon: PuzzlePieceIcon },
   { name: 'About', href: '/about', icon: InformationCircleIcon },
 ];
 
