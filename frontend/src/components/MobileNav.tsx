@@ -2,23 +2,23 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   HomeIcon,
   FolderIcon,
-  Cog6ToothIcon,
   PuzzlePieceIcon,
+  AcademicCapIcon,
   InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
   FolderIcon as FolderIconSolid,
-  Cog6ToothIcon as Cog6ToothIconSolid,
   PuzzlePieceIcon as PuzzlePieceIconSolid,
+  AcademicCapIcon as AcademicCapIconSolid,
   InformationCircleIcon as InformationCircleIconSolid,
 } from '@heroicons/react/24/solid';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: HomeIcon, activeIcon: HomeIconSolid },
   { name: 'Cases', href: '/cases', icon: FolderIcon, activeIcon: FolderIconSolid },
-  { name: 'Settings', href: '/settings', icon: Cog6ToothIcon, activeIcon: Cog6ToothIconSolid },
   { name: 'Quiz', href: '/quiz', icon: PuzzlePieceIcon, activeIcon: PuzzlePieceIconSolid },
+  { name: 'Learn', href: '/learning', icon: AcademicCapIcon, activeIcon: AcademicCapIconSolid },
   { name: 'About', href: '/about', icon: InformationCircleIcon, activeIcon: InformationCircleIconSolid },
 ];
 
