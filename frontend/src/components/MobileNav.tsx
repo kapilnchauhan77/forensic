@@ -3,17 +3,20 @@ import {
   HomeIcon,
   FolderIcon,
   Cog6ToothIcon,
+  InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
   FolderIcon as FolderIconSolid,
   Cog6ToothIcon as Cog6ToothIconSolid,
+  InformationCircleIcon as InformationCircleIconSolid,
 } from '@heroicons/react/24/solid';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: HomeIcon, activeIcon: HomeIconSolid },
   { name: 'Cases', href: '/cases', icon: FolderIcon, activeIcon: FolderIconSolid },
   { name: 'Settings', href: '/settings', icon: Cog6ToothIcon, activeIcon: Cog6ToothIconSolid },
+  { name: 'About', href: '/about', icon: InformationCircleIcon, activeIcon: InformationCircleIconSolid },
 ];
 
 export default function MobileNav() {

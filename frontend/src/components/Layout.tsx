@@ -7,18 +7,20 @@ import {
   HomeIcon,
   FolderIcon,
   Cog6ToothIcon,
-  FingerPrintIcon,
   ArrowRightOnRectangleIcon,
   ChevronRightIcon,
+  InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../hooks/useAuth';
 import MobileNav from './MobileNav';
 import ThemeToggle from './ThemeToggle';
+import ClarioLogo from './ClarioLogo';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: HomeIcon },
   { name: 'Cases', href: '/cases', icon: FolderIcon },
   { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
+  { name: 'About', href: '/about', icon: InformationCircleIcon },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -85,11 +87,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   {/* Logo */}
                   <div className="flex h-20 items-center px-6 border-b border-zinc-800">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/30">
-                        <FingerPrintIcon className="h-7 w-7 text-white" />
-                      </div>
+                      <ClarioLogo size={32} />
                       <div>
-                        <span className="text-white font-bold text-lg">FP Forensics</span>
+                        <span className="text-white font-bold text-lg">Clario</span>
                         <p className="text-xs text-zinc-400">Analysis Platform</p>
                       </div>
                     </div>
@@ -154,11 +154,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Logo */}
           <div className="flex h-20 items-center px-6 border-b border-zinc-800">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/30">
-                <FingerPrintIcon className="h-7 w-7 text-white" />
-              </div>
+              <ClarioLogo size={32} />
               <div>
-                <span className="text-white font-bold text-lg">FP Forensics</span>
+                <span className="text-white font-bold text-lg">Clario</span>
                 <p className="text-xs text-zinc-400">Analysis Platform</p>
               </div>
             </div>
@@ -238,8 +236,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Mobile title */}
           <div className="flex items-center gap-2 lg:hidden">
-            <FingerPrintIcon className="h-6 w-6 text-indigo-500" />
-            <span className="font-bold text-gray-900 dark:text-white">FP Forensics</span>
+            <ClarioLogo size={24} />
+            <span className="font-bold text-gray-900 dark:text-white">Clario</span>
           </div>
 
           {/* Spacer */}

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FingerPrintIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../hooks/useAuth';
 import toast from 'react-hot-toast';
+import ClarioLogo from '../components/ClarioLogo';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -41,15 +42,11 @@ export default function Login() {
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20">
           <div className="flex items-center gap-4 mb-8">
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-xl shadow-indigo-500/30">
-              <FingerPrintIcon className="h-12 w-12 text-white" />
-            </div>
+            <ClarioLogo size={64} />
           </div>
 
           <h1 className="text-5xl xl:text-6xl font-extrabold text-white mb-6 leading-tight">
-            Fingerprint<br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400">Forensics</span><br />
-            Platform
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400">Clario</span>
           </h1>
 
           <p className="text-xl text-zinc-300 max-w-md mb-12">
@@ -73,8 +70,8 @@ export default function Login() {
         </div>
 
         {/* Decorative fingerprint */}
-        <div className="absolute -bottom-20 -right-20 opacity-5">
-          <FingerPrintIcon className="w-96 h-96 text-white" />
+        <div className="absolute -bottom-20 -right-20 opacity-10">
+          <ClarioLogo size={384} />
         </div>
       </div>
 
@@ -83,10 +80,10 @@ export default function Login() {
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="lg:hidden flex flex-col items-center mb-10">
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-xl shadow-indigo-500/30 mb-6">
-              <FingerPrintIcon className="h-12 w-12 text-white" />
+            <div className="mb-4">
+              <ClarioLogo size={64} />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">FP Forensics</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Clario</h1>
             <p className="text-gray-500 dark:text-zinc-400">Analysis Platform</p>
           </div>
 

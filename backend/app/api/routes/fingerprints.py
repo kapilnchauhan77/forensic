@@ -77,11 +77,43 @@ async def upload_fingerprint(
     # Compute hash
     file_hash = compute_sha256(content)
 
-    # Get image dimensions
+    # Get image dimensions and auto-rotate if vertical
     from PIL import Image
+    import PIL.ImageOps
+
     img = Image.open(io.BytesIO(content))
+
+    # Handle EXIF orientation first (common in phone photos)
+    try:
+        img = PIL.ImageOps.exif_transpose(img)
+    except Exception:
+        pass
+
     width, height = img.size
     dpi = img.info.get("dpi", (None, None))[0]
+
+    # Auto-rotate vertical images to horizontal
+    if height > width:
+        img = img.rotate(-90, expand=True)
+        width, height = img.size
+
+    # Re-encode the image (whether rotated or not, to apply EXIF correction)
+    buffer = io.BytesIO()
+    img_format = file_ext.upper()
+    if img_format == 'JPG':
+        img_format = 'JPEG'
+
+    # Save with appropriate parameters based on format
+    if img_format == 'JPEG':
+        img.save(buffer, format=img_format, quality=95)
+    else:
+        img.save(buffer, format=img_format)
+
+    buffer.seek(0)
+    content = buffer.getvalue()
+    file_size = len(content)
+    # Recompute hash for processed image
+    file_hash = compute_sha256(content)
 
     # Store original file (immutable)
     storage = StorageService()
@@ -177,9 +209,41 @@ async def upload_fingerprints_batch(
             file_hash = compute_sha256(content)
 
             from PIL import Image
+            import PIL.ImageOps
+
             img = Image.open(io.BytesIO(content))
+
+            # Handle EXIF orientation first (common in phone photos)
+            try:
+                img = PIL.ImageOps.exif_transpose(img)
+            except Exception:
+                pass
+
             width, height = img.size
             dpi = img.info.get("dpi", (None, None))[0]
+
+            # Auto-rotate vertical images to horizontal
+            if height > width:
+                img = img.rotate(-90, expand=True)
+                width, height = img.size
+
+            # Re-encode the image (whether rotated or not, to apply EXIF correction)
+            buffer = io.BytesIO()
+            img_format = file_ext.upper()
+            if img_format == 'JPG':
+                img_format = 'JPEG'
+
+            # Save with appropriate parameters based on format
+            if img_format == 'JPEG':
+                img.save(buffer, format=img_format, quality=95)
+            else:
+                img.save(buffer, format=img_format)
+
+            buffer.seek(0)
+            content = buffer.getvalue()
+            file_size = len(content)
+            # Recompute hash for processed image
+            file_hash = compute_sha256(content)
 
             storage_path = await storage.store_original(
                 content=content,

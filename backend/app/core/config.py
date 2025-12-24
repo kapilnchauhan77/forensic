@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # Application
-    APP_NAME: str = "Fingerprint Forensics Platform"
+    APP_NAME: str = "Clario"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
     SECRET_KEY: str = "your-secret-key-change-in-production"
