@@ -174,6 +174,9 @@ class Fingerprint(Base):
     examiner_notes = Column(Text, nullable=True)
     manual_override = Column(Boolean, default=False)  # If classification was manually corrected
 
+    # Multiple fingerprints detection
+    multiple_fingerprints = Column(Boolean, default=False)  # True if multiple prints detected in image
+
     # Exhibit reference
     exhibit_id = Column(String, ForeignKey("exhibits.id"), nullable=False)
 

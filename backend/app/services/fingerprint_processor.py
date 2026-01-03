@@ -12,7 +12,7 @@ from ..models.fingerprint import Fingerprint, FingerprintProcessingResult, Proce
 from ..models.pipeline import PipelineConfig
 from ..core.config import settings
 from .enhancement import FingerprintEnhancer, EnhancementResult, image_to_bytes, bytes_to_image
-from .quality import FingerprintQualityAssessor, FingerprintPresenceDetector
+from .quality import FingerprintQualityAssessor, FingerprintPresenceDetector, MultipleFingerprintsResult
 from .classification import FingerprintClassifier
 from .storage import StorageService
 from .gemini_enhancement import get_gemini_enhancer, GeminiEnhancementResult
@@ -38,6 +38,7 @@ class FingerprintProcessorService:
         enhancement_preset: str = "rolled_plain",
         generate_variants: bool = True,
         user_id: Optional[str] = None,
+        force_process: bool = False,
     ) -> Fingerprint:
         """Process a fingerprint through the full pipeline"""
         # Get fingerprint record
@@ -90,6 +91,28 @@ class FingerprintProcessorService:
                     original_image=original_image,
                     enhancement_preset=enhancement_preset,
                 )
+
+            # Step 1.6: Multiple fingerprint detection
+            if not force_process:
+                multiple_result = self.presence_detector.detect_multiple(original_image)
+                logger.info(
+                    f"Multiple fingerprint check for {fingerprint_id}: "
+                    f"multiple={multiple_result.multiple_detected}, "
+                    f"count={multiple_result.estimated_count}, "
+                    f"confidence={multiple_result.confidence:.3f}"
+                )
+
+                if multiple_result.multiple_detected:
+                    logger.info(f"Multiple fingerprints detected in {fingerprint_id}, skipping processing")
+                    return await self._handle_multiple_fingerprints(
+                        fingerprint=fingerprint,
+                        multiple_result=multiple_result,
+                        quality_result=quality_result,
+                        original_image=original_image,
+                        enhancement_preset=enhancement_preset,
+                    )
+            else:
+                logger.info(f"Force processing {fingerprint_id}, skipping multiple fingerprint check")
 
             # Step 2: Get enhancement config
             config = await self._get_pipeline_config(enhancement_preset)
@@ -285,14 +308,29 @@ class FingerprintProcessorService:
             )
 
             # Primary pattern classification
-            fingerprint.pattern_type = pattern_map.get(
-                classification_result.pattern_type, PatternType.UNKNOWN
-            )
-            fingerprint.pattern_subtype = subtype_map.get(
-                classification_result.pattern_subtype, PatternSubtype.UNKNOWN
-            )
+            # Apply confidence threshold - reject very low confidence classifications
+            MIN_CLASSIFICATION_CONFIDENCE = 0.30
+            if classification_result.confidence < MIN_CLASSIFICATION_CONFIDENCE:
+                logger.warning(
+                    f"Low classification confidence ({classification_result.confidence:.2f}) for {fingerprint_id}. "
+                    f"Original VLM guess: {classification_result.pattern_type}. Marking as UNKNOWN."
+                )
+                fingerprint.pattern_type = PatternType.UNKNOWN
+                fingerprint.pattern_subtype = PatternSubtype.UNKNOWN
+                fingerprint.classification_rationale = (
+                    f"Classification uncertain (confidence: {classification_result.confidence:.2f}). "
+                    f"Original VLM guess: {classification_result.pattern_type}. "
+                    f"{classification_result.rationale}"
+                )
+            else:
+                fingerprint.pattern_type = pattern_map.get(
+                    classification_result.pattern_type, PatternType.UNKNOWN
+                )
+                fingerprint.pattern_subtype = subtype_map.get(
+                    classification_result.pattern_subtype, PatternSubtype.UNKNOWN
+                )
+                fingerprint.classification_rationale = classification_result.rationale
             fingerprint.pattern_confidence = classification_result.confidence
-            fingerprint.classification_rationale = classification_result.rationale
 
             # FBI/NCIC classification codes
             fingerprint.ncic_code = classification_result.ncic_code
@@ -604,6 +642,112 @@ class FingerprintProcessorService:
 
         logger.info(
             f"Fingerprint {fingerprint.id} processed as NOT_PRESENT: {presence_result.reason}"
+        )
+
+        return fingerprint
+
+    async def _handle_multiple_fingerprints(
+        self,
+        fingerprint: Fingerprint,
+        multiple_result: MultipleFingerprintsResult,
+        quality_result,  # QualityAssessmentResult
+        original_image: np.ndarray,
+        enhancement_preset: str,
+    ) -> Fingerprint:
+        """
+        Handle the case when multiple fingerprints are detected in the image.
+
+        Skips enhancement and classification, sets multiple_fingerprints=True,
+        and stores the original image as-is. Status is COMPLETED (not FAILED).
+        """
+        # Store original as "enhanced" (no processing applied)
+        original_bytes = image_to_bytes(original_image)
+        original_hash = hashlib.sha256(original_bytes).hexdigest()
+
+        # Store in enhanced path for consistency
+        enhanced_path = await self.storage.store_enhanced(
+            content=original_bytes,
+            fingerprint_id=fingerprint.id,
+            preset=f"{enhancement_preset}_multiple",
+        )
+
+        # Get config for record keeping
+        config = await self._get_pipeline_config(enhancement_preset)
+
+        # Create processing result record
+        processing_result = FingerprintProcessingResult(
+            fingerprint_id=fingerprint.id,
+            enhanced_storage_path=enhanced_path,
+            enhanced_hash_sha256=original_hash,
+            pipeline_version=self.PIPELINE_VERSION,
+            pipeline_config=config,
+            enhancement_preset=enhancement_preset,
+            model_name="multiple_detector",
+            model_version="1.0.0",
+            prompt_version="N/A",
+            prompt_hash="N/A",
+            quality_score_before=quality_result.score,
+            quality_score_after=quality_result.score,  # No improvement (no enhancement)
+            quality_improvement=0.0,
+            processing_time_ms=0,
+            artifact_risk_level="none",
+            artifact_warnings=[],
+            ridge_orientation_map_path=None,
+            rationale_overlay_path=None,
+            is_primary=True,
+        )
+
+        # Mark any existing primary results as non-primary
+        existing_results = await self.db.execute(
+            select(FingerprintProcessingResult).where(
+                FingerprintProcessingResult.fingerprint_id == fingerprint.id,
+                FingerprintProcessingResult.is_primary == True,
+            )
+        )
+        for existing in existing_results.scalars().all():
+            existing.is_primary = False
+
+        self.db.add(processing_result)
+
+        # Update fingerprint with multiple fingerprint flag
+        fingerprint.multiple_fingerprints = True
+        fingerprint.evidence_type = EvidenceType.UNKNOWN
+        fingerprint.detail_level = DetailLevel.LEVEL_1
+        fingerprint.pattern_type = PatternType.UNKNOWN
+        fingerprint.pattern_subtype = PatternSubtype.UNKNOWN
+        fingerprint.pattern_confidence = multiple_result.confidence
+        fingerprint.classification_rationale = (
+            f"Multiple fingerprints detected ({multiple_result.estimated_count}). "
+            f"{multiple_result.reason} "
+            f"Processing skipped. Use force_process=True to process anyway."
+        )
+
+        # Set NCIC code to indicate unknown/not classified
+        fingerprint.ncic_code = "XX"  # Multiple/Not Classified
+        fingerprint.henry_value = None
+        fingerprint.ridge_count = None
+
+        # No singular points or minutiae (not analyzed)
+        fingerprint.core_count = None
+        fingerprint.delta_count = None
+        fingerprint.core_positions = None
+        fingerprint.delta_positions = None
+        fingerprint.minutiae_count = None
+        fingerprint.minutiae_details = None
+
+        # No ridge characteristics
+        fingerprint.ridge_flow_direction = None
+        fingerprint.ridge_density = None
+
+        # Update status to COMPLETED (not FAILED)
+        fingerprint.status = ProcessingStatus.COMPLETED
+        fingerprint.processed_at = datetime.utcnow()
+
+        await self.db.commit()
+
+        logger.info(
+            f"Fingerprint {fingerprint.id} marked as MULTIPLE: "
+            f"{multiple_result.estimated_count} fingerprints detected"
         )
 
         return fingerprint

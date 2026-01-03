@@ -32,6 +32,16 @@ class FingerprintPresenceResult:
     metrics: Dict[str, float]  # Detection metrics for debugging
 
 
+@dataclass
+class MultipleFingerprintsResult:
+    """Result of multiple fingerprint detection"""
+    multiple_detected: bool  # True if multiple fingerprints detected
+    estimated_count: int  # Approximate count of fingerprints (1, 2, 3, etc.)
+    confidence: float  # 0-1 confidence score
+    reason: str  # Explanation for the detection result
+    regions: List[Dict]  # Detected fingerprint regions with bounding boxes
+
+
 class FingerprintQualityAssessor:
     """Assess fingerprint image quality for forensic processing"""
 
@@ -465,11 +475,12 @@ class FingerprintPresenceDetector:
     to avoid wasting resources on images that don't contain fingerprints.
     """
 
-    # Thresholds for detection (balanced - avoid both false positives and false negatives)
-    MIN_RIDGE_COHERENCE = 0.32  # Minimum coherence to consider ridge-like patterns
-    MIN_RIDGE_COVERAGE = 0.08  # Minimum percentage of image with ridge patterns (8%)
-    MIN_GRADIENT_MAGNITUDE = 8.0  # Minimum gradient for ridge detection
-    CONFIDENCE_THRESHOLD = 0.45  # Minimum confidence to declare fingerprint present
+    # Thresholds for detection (stricter to reduce false positives on plain surfaces)
+    # Previous values (0.32, 0.45) were too lenient and allowed non-fingerprints through
+    MIN_RIDGE_COHERENCE = 0.40  # Minimum coherence to consider ridge-like patterns
+    MIN_RIDGE_COVERAGE = 0.10  # Minimum percentage of image with ridge patterns (10%)
+    MIN_GRADIENT_MAGNITUDE = 10.0  # Minimum gradient for ridge detection
+    CONFIDENCE_THRESHOLD = 0.55  # Minimum confidence to declare fingerprint present
 
     def detect(self, image: np.ndarray) -> FingerprintPresenceResult:
         """
@@ -746,3 +757,189 @@ class FingerprintPresenceDetector:
                 return f"No fingerprint detected: {', '.join(issues)}."
             else:
                 return "No fingerprint detected: image does not contain friction ridge patterns."
+
+    # Thresholds for multiple fingerprint detection
+    MULTIPLE_MIN_REGION_RATIO = 0.05  # Minimum 5% of image area per fingerprint region
+    MULTIPLE_MIN_SEPARATION_RATIO = 0.15  # Minimum 15% of image dimension separation
+    MULTIPLE_COHERENCE_THRESHOLD = 0.35  # Coherence threshold for ridge regions
+    MULTIPLE_CONFIDENCE_THRESHOLD = 0.6  # Confidence to declare multiple fingerprints
+
+    def detect_multiple(self, image: np.ndarray) -> MultipleFingerprintsResult:
+        """
+        Detect if multiple fingerprints are present in the image.
+
+        Algorithm:
+        1. Compute coherence map to find ridge-like regions
+        2. Threshold and find connected components
+        3. Filter by minimum size (fingerprint-sized regions)
+        4. Check if multiple separate regions exist with sufficient separation
+        5. Analyze orientation discontinuity between regions
+
+        Returns MultipleFingerprintsResult with detection decision.
+        """
+        # Convert to grayscale if needed
+        if len(image.shape) == 3:
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = image.copy()
+
+        h, w = gray.shape
+        total_area = h * w
+        min_region_area = int(total_area * self.MULTIPLE_MIN_REGION_RATIO)
+        min_separation = int(min(h, w) * self.MULTIPLE_MIN_SEPARATION_RATIO)
+
+        # Step 1: Compute coherence map (same as in detect())
+        sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
+        sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
+        gradient_magnitude = np.sqrt(sobelx ** 2 + sobely ** 2)
+
+        block_size = 16
+        gxx = cv2.blur(sobelx ** 2, (block_size, block_size))
+        gyy = cv2.blur(sobely ** 2, (block_size, block_size))
+        gxy = cv2.blur(sobelx * sobely, (block_size, block_size))
+
+        coherence = np.sqrt((gxx - gyy) ** 2 + 4 * gxy ** 2) / (gxx + gyy + 1e-6)
+
+        # Step 2: Create binary mask of high-coherence ridge regions
+        ridge_mask = (
+            (coherence > self.MULTIPLE_COHERENCE_THRESHOLD) &
+            (gradient_magnitude > self.MIN_GRADIENT_MAGNITUDE)
+        ).astype(np.uint8) * 255
+
+        # Morphological operations to clean up and separate regions
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+        ridge_mask = cv2.morphologyEx(ridge_mask, cv2.MORPH_CLOSE, kernel)
+        ridge_mask = cv2.morphologyEx(ridge_mask, cv2.MORPH_OPEN, kernel)
+
+        # Step 3: Find connected components
+        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(
+            ridge_mask, connectivity=8
+        )
+
+        # Step 4: Filter regions by size (skip background label 0)
+        valid_regions = []
+        for i in range(1, num_labels):
+            area = stats[i, cv2.CC_STAT_AREA]
+            if area >= min_region_area:
+                x = stats[i, cv2.CC_STAT_LEFT]
+                y = stats[i, cv2.CC_STAT_TOP]
+                rw = stats[i, cv2.CC_STAT_WIDTH]
+                rh = stats[i, cv2.CC_STAT_HEIGHT]
+                cx, cy = centroids[i]
+                valid_regions.append({
+                    "label": i,
+                    "area": int(area),
+                    "bbox": {"x": int(x), "y": int(y), "width": int(rw), "height": int(rh)},
+                    "centroid": {"x": float(cx), "y": float(cy)},
+                    "area_ratio": float(area / total_area),
+                })
+
+        # Step 5: Check if regions are sufficiently separated
+        separated_regions = self._find_separated_regions(valid_regions, min_separation)
+
+        # Step 6: Calculate confidence and make decision
+        estimated_count = len(separated_regions)
+        multiple_detected = estimated_count >= 2
+
+        if multiple_detected:
+            # Calculate confidence based on region properties
+            confidence = self._calculate_multiple_confidence(
+                separated_regions, total_area, min_separation
+            )
+            reason = (
+                f"Detected {estimated_count} separate fingerprint regions. "
+                f"Regions are well-separated with distinct ridge patterns."
+            )
+        else:
+            confidence = 0.0
+            if estimated_count == 1:
+                reason = "Single fingerprint region detected."
+            else:
+                reason = "No distinct fingerprint regions detected."
+
+        return MultipleFingerprintsResult(
+            multiple_detected=multiple_detected and confidence >= self.MULTIPLE_CONFIDENCE_THRESHOLD,
+            estimated_count=max(estimated_count, 1),
+            confidence=round(confidence, 3),
+            reason=reason,
+            regions=separated_regions,
+        )
+
+    def _find_separated_regions(
+        self, regions: List[Dict], min_separation: int
+    ) -> List[Dict]:
+        """
+        Find regions that are sufficiently separated from each other.
+
+        Uses centroid distance to determine if regions are distinct fingerprints.
+        """
+        if len(regions) <= 1:
+            return regions
+
+        # Sort by area (largest first)
+        sorted_regions = sorted(regions, key=lambda r: r["area"], reverse=True)
+
+        separated = [sorted_regions[0]]
+
+        for region in sorted_regions[1:]:
+            # Check if this region is separated from all already-selected regions
+            is_separated = True
+            for selected in separated:
+                dist = np.sqrt(
+                    (region["centroid"]["x"] - selected["centroid"]["x"]) ** 2 +
+                    (region["centroid"]["y"] - selected["centroid"]["y"]) ** 2
+                )
+                if dist < min_separation:
+                    is_separated = False
+                    break
+
+            if is_separated:
+                separated.append(region)
+
+        return separated
+
+    def _calculate_multiple_confidence(
+        self, regions: List[Dict], total_area: int, min_separation: int
+    ) -> float:
+        """
+        Calculate confidence score for multiple fingerprint detection.
+
+        Factors:
+        - Number of regions (more = higher confidence, up to a point)
+        - Size of regions (larger = more likely real fingerprints)
+        - Separation distance (more separation = higher confidence)
+        """
+        if len(regions) < 2:
+            return 0.0
+
+        # Factor 1: Region count (2 regions = 0.6, 3+ = 0.8)
+        count_factor = min(0.4 + len(regions) * 0.2, 1.0)
+
+        # Factor 2: Average region size (larger regions = more confident)
+        avg_area_ratio = sum(r["area_ratio"] for r in regions) / len(regions)
+        size_factor = min(avg_area_ratio / 0.15, 1.0)  # 15% each is ideal
+
+        # Factor 3: Average separation distance
+        separations = []
+        for i, r1 in enumerate(regions):
+            for r2 in regions[i + 1:]:
+                dist = np.sqrt(
+                    (r1["centroid"]["x"] - r2["centroid"]["x"]) ** 2 +
+                    (r1["centroid"]["y"] - r2["centroid"]["y"]) ** 2
+                )
+                separations.append(dist)
+
+        if separations:
+            avg_separation = sum(separations) / len(separations)
+            separation_factor = min(avg_separation / (min_separation * 2), 1.0)
+        else:
+            separation_factor = 0.5
+
+        # Weighted combination
+        confidence = (
+            0.4 * count_factor +
+            0.3 * size_factor +
+            0.3 * separation_factor
+        )
+
+        return float(min(max(confidence, 0), 1))

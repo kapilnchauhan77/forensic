@@ -29,7 +29,10 @@
       "Bash(python:*)",
       "Bash(celery:*)",
       "Bash(find:*)",
-      "Bash(uvicorn:*)"
+      "Bash(uvicorn:*)",
+      "Bash(export DATABASE_SYNC_URL=\"postgresql://postgres:postgres@localhost:5432/forensic_fingerprint\")",
+      "Bash(alembic upgrade:*)",
+      "Bash(alembic stamp:*)"
     ],
     "deny": [],
     "ask": []

@@ -30,6 +30,7 @@ def process_fingerprint_task(
     enhancement_preset: str = "rolled_plain",
     generate_variants: bool = True,
     user_id: Optional[str] = None,
+    force_process: bool = False,
 ):
     """Celery task to process a fingerprint"""
     from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
@@ -49,6 +50,7 @@ def process_fingerprint_task(
                     enhancement_preset=enhancement_preset,
                     generate_variants=generate_variants,
                     user_id=user_id,
+                    force_process=force_process,
                 )
                 return {
                     "status": "success",

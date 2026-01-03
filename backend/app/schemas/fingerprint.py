@@ -184,6 +184,9 @@ class FingerprintResponse(FingerprintBase):
     examiner_notes: Optional[str] = None
     manual_override: bool = False
 
+    # Multiple fingerprints detection
+    multiple_fingerprints: bool = Field(False, description="True if multiple fingerprints detected in image")
+
     exhibit_id: str
     uploaded_by_id: str
 
@@ -214,8 +217,16 @@ class BatchUploadResponse(BaseModel):
 class ProcessFingerprintRequest(BaseModel):
     enhancement_preset: str = "rolled_plain"
     generate_variants: bool = True
+    force_process: bool = Field(
+        False,
+        description="Force processing even if multiple fingerprints detected"
+    )
 
 
 class ReprocessFingerprintRequest(BaseModel):
     enhancement_preset: Optional[str] = None
     force: bool = False  # Force reprocess even if already completed
+    force_process: bool = Field(
+        False,
+        description="Force processing even if multiple fingerprints detected"
+    )

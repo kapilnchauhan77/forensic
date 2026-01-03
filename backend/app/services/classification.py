@@ -202,6 +202,70 @@ CONFIDENCE GUIDELINES:
             self.CLASSIFICATION_PROMPT.encode()
         ).hexdigest()[:16]
 
+    def _validate_pattern_consistency(
+        self,
+        pattern_type: str,
+        pattern_subtype: str,
+        delta_count: int,
+        core_count: int,
+        confidence: float,
+    ) -> tuple:
+        """
+        Validate that pattern_type is consistent with delta/core counts.
+
+        The FBI/NCIC classification is determined by delta count:
+        - 0 deltas → ARCH
+        - 1 delta → LOOP
+        - 2+ deltas → WHORL
+
+        If VLM's reported pattern_type doesn't match delta_count, we correct it.
+
+        Returns:
+            Tuple of (pattern_type, pattern_subtype, confidence, correction_reason)
+        """
+        correction_reason = None
+        original_pattern = pattern_type
+
+        # WHORL requires 2+ deltas
+        if pattern_type == "whorl" and delta_count < 2:
+            if delta_count == 1:
+                pattern_type = "loop"
+                # Central pocket loop looks whorl-like but has only 1 delta
+                pattern_subtype = "central_pocket_loop"
+                correction_reason = f"Corrected whorl→loop: only {delta_count} delta detected (whorls require 2+)"
+            else:  # delta_count == 0
+                pattern_type = "arch"
+                # Tented arch can look somewhat spiral-like
+                pattern_subtype = "tented_arch"
+                correction_reason = f"Corrected whorl→arch: no deltas detected (whorls require 2+)"
+            confidence *= 0.6  # Reduce confidence for corrected classification
+
+        # ARCH cannot have deltas (by definition)
+        elif pattern_type == "arch" and delta_count > 0:
+            if delta_count == 1:
+                pattern_type = "loop"
+                pattern_subtype = "ulnar_loop"
+                correction_reason = f"Corrected arch→loop: {delta_count} delta detected (arches have 0)"
+            else:  # delta_count >= 2
+                pattern_type = "whorl"
+                pattern_subtype = "plain_whorl"
+                correction_reason = f"Corrected arch→whorl: {delta_count} deltas detected (arches have 0)"
+            confidence *= 0.6
+
+        # LOOP should have exactly 1 delta
+        elif pattern_type == "loop" and delta_count != 1:
+            if delta_count == 0:
+                pattern_type = "arch"
+                pattern_subtype = "plain_arch"
+                correction_reason = f"Corrected loop→arch: no deltas detected (loops have exactly 1)"
+            elif delta_count >= 2:
+                pattern_type = "whorl"
+                pattern_subtype = "double_loop_whorl"
+                correction_reason = f"Corrected loop→whorl: {delta_count} deltas detected (loops have exactly 1)"
+            confidence *= 0.6
+
+        return pattern_type, pattern_subtype, confidence, correction_reason
+
     def pre_classify_image(self, image: np.ndarray) -> tuple:
         """
         Pre-classification to determine if image contains a genuine fingerprint.
@@ -479,6 +543,28 @@ KEY DISTINCTION:
             core_detected = core_count > 0
             delta_detected = delta_count > 0
 
+            # CRITICAL: Validate pattern consistency with delta count
+            # The FBI/NCIC classification is determined by delta count, not visual appearance
+            rationale = result_data.get("rationale", "")
+            (
+                pattern_type,
+                pattern_subtype,
+                confidence,
+                correction_reason,
+            ) = self._validate_pattern_consistency(
+                pattern_type=pattern_type,
+                pattern_subtype=pattern_subtype,
+                delta_count=delta_count,
+                core_count=core_count,
+                confidence=confidence,
+            )
+            if correction_reason:
+                import logging
+                logging.getLogger(__name__).warning(
+                    f"Pattern consistency correction: {correction_reason}"
+                )
+                rationale = f"[CORRECTED: {correction_reason}] {rationale}"
+
             # NCIC code validation
             ncic_code = result_data.get("ncic_code", "UP").upper()
             valid_ncic = [
@@ -574,51 +660,200 @@ KEY DISTINCTION:
             )
             return self._fallback_classification(image)
 
-    def _fallback_classification(self, image: np.ndarray) -> ClassificationResult:
-        """Fallback classification using OpenCV when VLM is unavailable"""
+    def _detect_singular_points_poincare(
+        self, image: np.ndarray
+    ) -> tuple[list, list]:
+        """
+        Detect singular points (cores and deltas) using Poincare index method.
+
+        The Poincare index is computed by summing orientation changes around a point:
+        - Core (loop center): Poincare index = +180° (or +π)
+        - Delta (triangular point): Poincare index = -180° (or -π)
+        - Regular ridge: Poincare index = 0°
+
+        Returns:
+            Tuple of (core_points, delta_points) where each is list of (x, y) tuples
+        """
         if len(image.shape) == 3:
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         else:
             gray = image.copy()
 
-        # Basic ridge flow analysis
+        h, w = gray.shape
+
+        # Compute gradient
         sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
         sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
 
-        # Compute orientation
+        # Compute orientation field (doubled angle to handle 180° ambiguity)
+        orientation = np.arctan2(sobely, sobelx)
+
+        # Block-based orientation for noise reduction
+        block_size = 16
+        h_blocks = h // block_size
+        w_blocks = w // block_size
+
+        if h_blocks < 3 or w_blocks < 3:
+            # Image too small for reliable detection
+            return [], []
+
+        orientation_blocks = np.zeros((h_blocks, w_blocks))
+
+        for i in range(h_blocks):
+            for j in range(w_blocks):
+                block = orientation[
+                    i * block_size : (i + 1) * block_size,
+                    j * block_size : (j + 1) * block_size,
+                ]
+                # Average orientation in block
+                orientation_blocks[i, j] = np.arctan2(
+                    np.mean(np.sin(2 * block)), np.mean(np.cos(2 * block))
+                ) / 2
+
+        cores = []
+        deltas = []
+
+        # Compute Poincare index for each internal block
+        for i in range(1, h_blocks - 1):
+            for j in range(1, w_blocks - 1):
+                # Get 8-connected neighbors in clockwise order
+                neighbors = [
+                    orientation_blocks[i - 1, j - 1],  # top-left
+                    orientation_blocks[i - 1, j],      # top
+                    orientation_blocks[i - 1, j + 1],  # top-right
+                    orientation_blocks[i, j + 1],      # right
+                    orientation_blocks[i + 1, j + 1],  # bottom-right
+                    orientation_blocks[i + 1, j],      # bottom
+                    orientation_blocks[i + 1, j - 1],  # bottom-left
+                    orientation_blocks[i, j - 1],      # left
+                ]
+
+                # Compute Poincare index (sum of orientation differences)
+                poincare_sum = 0.0
+                for k in range(8):
+                    diff = neighbors[(k + 1) % 8] - neighbors[k]
+                    # Normalize to [-π/2, π/2]
+                    while diff > np.pi / 2:
+                        diff -= np.pi
+                    while diff < -np.pi / 2:
+                        diff += np.pi
+                    poincare_sum += diff
+
+                # Convert to block center coordinates
+                x = int((j + 0.5) * block_size)
+                y = int((i + 0.5) * block_size)
+
+                # Threshold for detection
+                # Core: Poincare ≈ +π (180°)
+                # Delta: Poincare ≈ -π (-180°)
+                if poincare_sum > np.pi * 0.5:  # > 90° suggests core
+                    cores.append((x, y))
+                elif poincare_sum < -np.pi * 0.5:  # < -90° suggests delta
+                    deltas.append((x, y))
+
+        # Merge nearby detections (within 2 blocks)
+        def merge_points(points: list, min_dist: int = 32) -> list:
+            if not points:
+                return []
+            merged = []
+            used = [False] * len(points)
+            for i, p1 in enumerate(points):
+                if used[i]:
+                    continue
+                cluster = [p1]
+                used[i] = True
+                for j, p2 in enumerate(points[i + 1:], i + 1):
+                    if not used[j]:
+                        dist = np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+                        if dist < min_dist:
+                            cluster.append(p2)
+                            used[j] = True
+                # Use centroid of cluster
+                cx = int(np.mean([p[0] for p in cluster]))
+                cy = int(np.mean([p[1] for p in cluster]))
+                merged.append((cx, cy))
+            return merged
+
+        cores = merge_points(cores)
+        deltas = merge_points(deltas)
+
+        return cores, deltas
+
+    def _fallback_classification(self, image: np.ndarray) -> ClassificationResult:
+        """
+        Fallback classification using OpenCV when VLM is unavailable.
+
+        Uses Poincare index method for delta/core detection, then classifies
+        based on FBI/NCIC delta count rules:
+        - 0 deltas → ARCH
+        - 1 delta → LOOP
+        - 2+ deltas → WHORL
+        """
+        if len(image.shape) == 3:
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = image.copy()
+
+        # Detect singular points using Poincare index
+        cores, deltas = self._detect_singular_points_poincare(image)
+
+        core_count = len(cores)
+        delta_count = len(deltas)
+        core_detected = core_count > 0
+        delta_detected = delta_count > 0
+
+        # Ridge flow analysis for subtype and flow direction
+        sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
+        sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
         orientation = 0.5 * np.arctan2(2 * sobelx * sobely, sobelx**2 - sobely**2)
 
-        # Analyze flow patterns
         h, w = gray.shape
         center_region = orientation[h // 3 : 2 * h // 3, w // 3 : 2 * w // 3]
-
-        # Compute orientation histogram
         hist, _ = np.histogram(
             center_region.flatten(), bins=18, range=(-np.pi / 2, np.pi / 2)
         )
         dominant_orientation = np.argmax(hist)
-
-        # Very basic heuristic classification
         orientation_variance = center_region.var()
 
-        if orientation_variance > 0.3:
+        # Classify based on delta count (FBI/NCIC standard)
+        if delta_count >= 2:
             pattern_type = "whorl"
             pattern_subtype = "plain_whorl"
             ncic_code = "WM"
             ridge_flow = "circular"
-            confidence = 0.3
-        elif dominant_orientation < 6 or dominant_orientation > 12:
+            confidence = 0.35 if delta_count == 2 else 0.30
+        elif delta_count == 1:
             pattern_type = "loop"
-            pattern_subtype = "ulnar_loop"
+            # Determine loop direction from ridge flow
+            if dominant_orientation < 6:
+                pattern_subtype = "radial_loop"
+                ridge_flow = "left_slant"
+            else:
+                pattern_subtype = "ulnar_loop"
+                ridge_flow = "right_slant"
             ncic_code = "PM"
-            ridge_flow = "left_slant" if dominant_orientation < 6 else "right_slant"
-            confidence = 0.25
+            confidence = 0.35
         else:
+            # delta_count == 0
             pattern_type = "arch"
-            pattern_subtype = "plain_arch"
-            ncic_code = "AA"
+            # Determine if tented based on orientation variance
+            if orientation_variance > 0.2 and core_count > 0:
+                pattern_subtype = "tented_arch"
+                ncic_code = "TT"
+                confidence = 0.30
+            else:
+                pattern_subtype = "plain_arch"
+                ncic_code = "AA"
+                confidence = 0.30
             ridge_flow = "vertical"
-            confidence = 0.2
+
+        # Convert core/delta positions to percentage format
+        core_positions = [
+            {"x": int(x * 100 / w), "y": int(y * 100 / h)} for x, y in cores
+        ]
+        delta_positions = [
+            {"x": int(x * 100 / w), "y": int(y * 100 / h)} for x, y in deltas
+        ]
 
         return ClassificationResult(
             is_fingerprint=True,
@@ -627,29 +862,31 @@ KEY DISTINCTION:
             pattern_subtype=pattern_subtype,
             confidence=confidence,
             detail_level="level_1",
-            rationale="Fallback classification using basic ridge flow analysis (VLM unavailable). This is a rough estimate only and should not be used for forensic purposes.",
+            rationale=f"Fallback classification using Poincare index singular point detection (VLM unavailable). Detected {core_count} core(s) and {delta_count} delta(s). Classification based on FBI/NCIC delta count rules.",
             alternative_patterns=[
                 {"pattern": "unknown", "subtype": "unknown", "confidence": 0.5}
             ],
-            core_detected=False,
-            delta_detected=False,
+            core_detected=core_detected,
+            delta_detected=delta_detected,
             ncic_code=ncic_code,
             henry_value=None,
             ridge_count=None,
-            core_count=0,
-            delta_count=0,
-            core_positions=[],
-            delta_positions=[],
+            core_count=core_count,
+            delta_count=delta_count,
+            core_positions=core_positions,
+            delta_positions=delta_positions,
             minutiae_count=None,
             minutiae_details=None,
             ridge_flow_direction=ridge_flow,
             ridge_density=None,
             raw_response={
-                "method": "fallback_opencv",
+                "method": "fallback_opencv_poincare",
                 "orientation_variance": float(orientation_variance),
+                "detected_cores": core_count,
+                "detected_deltas": delta_count,
             },
             prompt_version="fallback",
-            prompt_hash="opencv_fallback",
+            prompt_hash="opencv_poincare_fallback",
         )
 
     def generate_rationale_overlay(

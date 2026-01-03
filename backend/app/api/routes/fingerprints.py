@@ -471,6 +471,7 @@ async def process_fingerprint(
         enhancement_preset=process_request.enhancement_preset,
         generate_variants=process_request.generate_variants,
         user_id=current_user_id,
+        force_process=process_request.force_process,
     )
 
     await AuditService.log(
@@ -482,6 +483,7 @@ async def process_fingerprint(
         details={
             "preset": process_request.enhancement_preset,
             "generate_variants": process_request.generate_variants,
+            "force_process": process_request.force_process,
         },
         ip_address=request.client.host if request.client else None,
     )
@@ -530,6 +532,7 @@ async def reprocess_fingerprint(
         enhancement_preset=reprocess_request.enhancement_preset or settings.DEFAULT_ENHANCEMENT_PRESET,
         generate_variants=True,
         user_id=current_user_id,
+        force_process=reprocess_request.force_process,
     )
 
     await AuditService.log(
@@ -541,6 +544,7 @@ async def reprocess_fingerprint(
         details={
             "preset": reprocess_request.enhancement_preset,
             "force": reprocess_request.force,
+            "force_process": reprocess_request.force_process,
         },
         ip_address=request.client.host if request.client else None,
     )
