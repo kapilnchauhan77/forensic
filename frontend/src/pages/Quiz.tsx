@@ -4,15 +4,21 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ArrowPathIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
 
 interface QuizQuestion {
   id: number;
   question: string;
+  questionType?: 'text' | 'image-identify' | 'image-compare';
+  image?: string;
+  imageAlt?: string;
   options: string[];
+  optionImages?: string[];
   correctAnswer: number;
   explanation: string;
+  explanationImage?: string;
 }
 
 const quizQuestions: QuizQuestion[] = [
@@ -135,6 +141,67 @@ const quizQuestions: QuizQuestion[] = [
     correctAnswer: 1,
     explanation: "Fingerprints are permanent because the pattern is anchored in the dermis (deeper skin layer). Only deep scarring that destroys the dermal layer can permanently alter fingerprints."
   },
+  // Image-based questions for pattern identification
+  {
+    id: 13,
+    question: "Identify the fingerprint pattern shown in the image above:",
+    questionType: 'image-identify',
+    image: '/images/fingerprints/patterns/whorl-plain.svg',
+    imageAlt: 'Fingerprint sample showing circular ridge pattern with two deltas',
+    options: ['Plain Arch', 'Ulnar Loop', 'Plain Whorl', 'Tented Arch'],
+    correctAnswer: 2,
+    explanation: "This is a Plain Whorl pattern, characterized by circular ridges forming a complete circuit with two deltas. Notice how the ridges form concentric circles around the core."
+  },
+  {
+    id: 14,
+    question: "What fingerprint pattern is displayed in the image?",
+    questionType: 'image-identify',
+    image: '/images/fingerprints/patterns/loop-ulnar.svg',
+    imageAlt: 'Fingerprint sample showing ridges that loop and exit on one side',
+    options: ['Radial Loop', 'Ulnar Loop', 'Double Loop Whorl', 'Plain Arch'],
+    correctAnswer: 1,
+    explanation: "This is an Ulnar Loop pattern. The ridges enter from one side, curve around, and exit from the same side. It's called 'ulnar' because the loop opens toward the ulnar bone (little finger side)."
+  },
+  {
+    id: 15,
+    question: "Examine the fingerprint pattern. Which type is this?",
+    questionType: 'image-identify',
+    image: '/images/fingerprints/patterns/arch-plain.svg',
+    imageAlt: 'Fingerprint sample showing ridges flowing in a wave pattern from side to side',
+    options: ['Plain Arch', 'Tented Arch', 'Radial Loop', 'Plain Whorl'],
+    correctAnswer: 0,
+    explanation: "This is a Plain Arch pattern - the rarest basic pattern type. Notice how the ridges rise gently in the center and flow from one side to the other without forming a loop or whorl."
+  },
+  {
+    id: 16,
+    question: "This fingerprint pattern features a sharp spike in the center. What is it?",
+    questionType: 'image-identify',
+    image: '/images/fingerprints/patterns/arch-tented.svg',
+    imageAlt: 'Fingerprint sample showing ridges with a sharp upward thrust in the center',
+    options: ['Plain Arch', 'Ulnar Loop', 'Tented Arch', 'Central Pocket Whorl'],
+    correctAnswer: 2,
+    explanation: "This is a Tented Arch pattern. Unlike plain arches, tented arches have ridges that make a sharp upward thrust in the center, creating a tent-like appearance. They typically have one delta."
+  },
+  {
+    id: 17,
+    question: "How many delta points can you identify in this whorl pattern?",
+    questionType: 'image-identify',
+    image: '/images/fingerprints/patterns/whorl-double.svg',
+    imageAlt: 'Double loop whorl fingerprint pattern',
+    options: ['None', 'One', 'Two', 'Three'],
+    correctAnswer: 2,
+    explanation: "This Double Loop Whorl has two delta points - the triangular formations where three ridge systems meet. All whorl patterns require at least two deltas for classification."
+  },
+  {
+    id: 18,
+    question: "What technique is being demonstrated in this forensic image?",
+    questionType: 'image-identify',
+    image: '/images/fingerprints/evidence/powder-dusting.svg',
+    imageAlt: 'Black powder being applied to a surface with a brush to reveal fingerprints',
+    options: ['Chemical fuming', 'Powder dusting', 'Ninhydrin treatment', 'UV illumination'],
+    correctAnswer: 1,
+    explanation: "This shows the powder dusting technique - one of the most common methods for developing latent prints on non-porous surfaces. The powder adheres to the oils and sweat deposits, making the print visible."
+  },
 ];
 
 export default function Quiz() {
@@ -215,6 +282,22 @@ export default function Quiz() {
 
             {/* Question card */}
             <div className="bg-gray-50 dark:bg-zinc-800 rounded-xl p-6 mb-6">
+              {/* Question image (for image-identify questions) */}
+              {shuffledQuestions[currentQuestion].image && (
+                <div className="mb-4 flex justify-center">
+                  <div className="relative bg-white dark:bg-zinc-900 rounded-lg p-4 border border-gray-200 dark:border-zinc-700 shadow-sm">
+                    <img
+                      src={shuffledQuestions[currentQuestion].image}
+                      alt={shuffledQuestions[currentQuestion].imageAlt || 'Question image'}
+                      className="max-h-48 w-auto object-contain mx-auto"
+                    />
+                    <div className="absolute bottom-2 right-2 p-1 bg-gray-100 dark:bg-zinc-800 rounded-full">
+                      <MagnifyingGlassIcon className="w-4 h-4 text-gray-500 dark:text-zinc-400" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 {shuffledQuestions[currentQuestion].question}
               </h3>

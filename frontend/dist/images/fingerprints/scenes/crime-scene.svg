@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+  <!-- Dark room background -->
+  <rect width="400" height="300" fill="#1a202c"/>
+  <!-- Floor -->
+  <polygon points="0,200 400,200 400,300 0,300" fill="#2d3748"/>
+  <!-- Floor pattern -->
+  <g stroke="#3d4758" stroke-width="1">
+    <line x1="0" y1="220" x2="400" y2="220"/>
+    <line x1="0" y1="250" x2="400" y2="250"/>
+    <line x1="0" y1="280" x2="400" y2="280"/>
+  </g>
+  <!-- Display case silhouette -->
+  <rect x="120" y="80" width="160" height="120" fill="#2d3748" stroke="#4a5568" stroke-width="2"/>
+  <rect x="130" y="90" width="140" height="80" fill="#1a202c" stroke="#68d391" stroke-width="1"/>
+  <!-- Evidence markers -->
+  <g font-family="Arial" font-size="14" font-weight="bold">
+    <circle cx="100" cy="250" r="12" fill="#f6e05e"/>
+    <text x="100" y="255" text-anchor="middle" fill="#1a202c">1</text>
+    <circle cx="280" cy="230" r="12" fill="#f6e05e"/>
+    <text x="280" y="235" text-anchor="middle" fill="#1a202c">2</text>
+    <circle cx="200" cy="270" r="12" fill="#f6e05e"/>
+    <text x="200" y="275" text-anchor="middle" fill="#1a202c">3</text>
+  </g>
+  <!-- Crime scene tape -->
+  <g>
+    <rect x="0" y="50" width="400" height="20" fill="#f6e05e" transform="rotate(-5 200 60)"/>
+    <text x="20" y="62" font-family="Arial" font-size="10" fill="#1a202c" font-weight="bold" transform="rotate(-5 200 60)">CRIME SCENE DO NOT CROSS    CRIME SCENE DO NOT CROSS    CRIME SCENE DO NOT CROSS</text>
+  </g>
+  <!-- Flashlight beam -->
+  <polygon points="350,100 300,180 380,200" fill="#faf089" opacity="0.2"/>
+</svg>

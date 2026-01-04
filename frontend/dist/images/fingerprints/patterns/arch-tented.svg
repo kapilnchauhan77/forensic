@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" stroke="#4a5568" stroke-width="1.5">
+  <rect width="200" height="200" fill="#f7fafc"/>
+  <!-- Tented Arch Pattern - ridges thrust upward sharply in center -->
+  <path d="M20 180 L100 50 L180 180" stroke-width="2"/>
+  <path d="M25 175 L100 58 L175 175"/>
+  <path d="M30 170 L100 66 L170 170"/>
+  <path d="M35 165 L100 74 L165 165"/>
+  <path d="M40 160 Q70 120 100 82 Q130 120 160 160"/>
+  <path d="M45 155 Q75 120 100 90 Q125 120 155 155"/>
+  <path d="M50 150 Q80 120 100 98 Q120 120 150 150"/>
+  <path d="M55 145 Q85 115 100 106 Q115 115 145 145"/>
+  <path d="M60 140 Q90 120 100 114 Q110 120 140 140"/>
+  <path d="M70 135 Q95 125 100 120 Q105 125 130 135"/>
+  <!-- Core and delta indicators -->
+  <circle cx="100" cy="75" r="3" fill="#e53e3e" stroke="none"/>
+  <polygon points="100,130 95,140 105,140" fill="#3182ce" stroke="none"/>
+  <!-- Label -->
+  <text x="100" y="195" text-anchor="middle" font-family="Arial" font-size="10" fill="#718096">Tented Arch</text>
+</svg>

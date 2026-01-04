@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" stroke="#4a5568" stroke-width="1.5">
+  <rect width="200" height="200" fill="#f7fafc"/>
+  <!-- Plain Arch Pattern - ridges rise in the center and fall on both sides -->
+  <path d="M20 180 Q100 60 180 180" stroke-width="2"/>
+  <path d="M25 175 Q100 65 175 175"/>
+  <path d="M30 170 Q100 70 170 170"/>
+  <path d="M35 165 Q100 75 165 165"/>
+  <path d="M40 160 Q100 80 160 160"/>
+  <path d="M45 155 Q100 85 155 155"/>
+  <path d="M50 150 Q100 90 150 150"/>
+  <path d="M55 145 Q100 95 145 145"/>
+  <path d="M60 140 Q100 100 140 140"/>
+  <path d="M65 135 Q100 105 135 135"/>
+  <path d="M70 130 Q100 110 130 130"/>
+  <path d="M75 125 Q100 112 125 125"/>
+  <path d="M80 120 Q100 114 120 120"/>
+  <!-- Core area indicator -->
+  <circle cx="100" cy="100" r="3" fill="#e53e3e" stroke="none"/>
+  <!-- Label -->
+  <text x="100" y="195" text-anchor="middle" font-family="Arial" font-size="10" fill="#718096">Plain Arch</text>
+</svg>

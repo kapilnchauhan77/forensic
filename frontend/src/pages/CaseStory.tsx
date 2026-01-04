@@ -24,8 +24,12 @@ import {
   type PatternMatchPuzzle,
   type EvidenceSelectPuzzle,
   type SequencePuzzle,
+  type DragDropPuzzle,
+  type ImageComparisonPuzzle,
 } from '../data/learningCases';
 import { useLearningProgress } from '../hooks/useLearningProgress';
+import DragDropPuzzleComponent from '../components/learning/DragDropPuzzle';
+import ImageComparisonViewer from '../components/learning/ImageComparisonViewer';
 
 export default function CaseStory() {
   const { caseId } = useParams<{ caseId: string }>();
@@ -307,22 +311,44 @@ function NarrativeScene({
   onContinue: () => void;
 }) {
   return (
-    <div className="p-6 space-y-6">
-      {content.speaker && (
-        <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
-            {content.speaker.charAt(0)}
-          </div>
-          <span className="font-semibold text-gray-900 dark:text-white">{content.speaker}</span>
+    <div className="relative overflow-hidden">
+      {/* Scene background image */}
+      {content.sceneImage && (
+        <div className="absolute inset-0 z-0">
+          <img
+            src={content.sceneImage}
+            alt=""
+            className="w-full h-full object-cover opacity-20 dark:opacity-10"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white dark:to-zinc-900" />
         </div>
       )}
-      <p className="text-lg text-gray-700 dark:text-zinc-300 leading-relaxed">{content.text}</p>
-      <button
-        onClick={onContinue}
-        className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-colors"
-      >
-        Continue
-      </button>
+
+      <div className="relative z-10 p-6 space-y-6">
+        {content.speaker && (
+          <div className="flex items-center gap-3">
+            {content.speakerImage ? (
+              <img
+                src={content.speakerImage}
+                alt={content.speaker}
+                className="h-14 w-14 rounded-full object-cover border-2 border-indigo-500 shadow-lg"
+              />
+            ) : (
+              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                {content.speaker.charAt(0)}
+              </div>
+            )}
+            <span className="font-semibold text-gray-900 dark:text-white">{content.speaker}</span>
+          </div>
+        )}
+        <p className="text-lg text-gray-700 dark:text-zinc-300 leading-relaxed">{content.text}</p>
+        <button
+          onClick={onContinue}
+          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-colors"
+        >
+          Continue
+        </button>
+      </div>
     </div>
   );
 }
@@ -393,6 +419,17 @@ function PuzzleScene({
         </div>
       </div>
 
+      {/* Instruction image if provided */}
+      {content.instructionImage && (
+        <div className="mb-4">
+          <img
+            src={content.instructionImage}
+            alt="Puzzle context"
+            className="w-full max-h-48 object-contain rounded-lg border border-gray-200 dark:border-zinc-700"
+          />
+        </div>
+      )}
+
       {/* Render puzzle based on type */}
       {content.data.type === 'pattern-match' && (
         <PatternMatchPuzzleComponent
@@ -415,6 +452,22 @@ function PuzzleScene({
           data={content.data as SequencePuzzle}
           onSuccess={onSuccess}
           onFail={onFail}
+        />
+      )}
+
+      {content.data.type === 'drag-drop' && (
+        <DragDropPuzzleComponent
+          data={content.data as DragDropPuzzle}
+          onComplete={(success) => success ? onSuccess() : onFail()}
+          hints={content.hints}
+        />
+      )}
+
+      {content.data.type === 'image-comparison' && (
+        <ImageComparisonViewer
+          data={content.data as ImageComparisonPuzzle}
+          onComplete={(success) => success ? onSuccess() : onFail()}
+          hints={content.hints}
         />
       )}
 
@@ -464,6 +517,21 @@ function PatternMatchPuzzleComponent({
   return (
     <div className="space-y-4">
       <p className="text-gray-900 dark:text-white font-medium">{data.question}</p>
+
+      {/* Target fingerprint image */}
+      {data.targetImage && (
+        <div className="flex justify-center">
+          <div className="bg-gray-100 dark:bg-zinc-800 rounded-xl p-4 inline-block">
+            <img
+              src={data.targetImage}
+              alt="Target fingerprint pattern"
+              className="w-32 h-32 object-contain"
+            />
+            <p className="text-xs text-center text-gray-500 dark:text-zinc-400 mt-2">Identify this pattern</p>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-3">
         {data.options.map((opt) => (
           <button
@@ -475,7 +543,14 @@ function PatternMatchPuzzleComponent({
                 : 'border-gray-200 dark:border-zinc-700 hover:border-indigo-300 dark:hover:border-indigo-700'
             }`}
           >
-            <span className="text-sm font-medium text-gray-900 dark:text-white">{opt.label}</span>
+            {opt.image && (
+              <img
+                src={opt.image}
+                alt={opt.label}
+                className="w-16 h-16 object-contain mx-auto mb-2"
+              />
+            )}
+            <span className="text-sm font-medium text-gray-900 dark:text-white block text-center">{opt.label}</span>
           </button>
         ))}
       </div>
@@ -683,6 +758,8 @@ function InfoScene({
   content: InfoContent;
   onContinue: () => void;
 }) {
+  const [imageExpanded, setImageExpanded] = useState(false);
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-start gap-3">
@@ -695,6 +772,25 @@ function InfoScene({
       </div>
 
       <p className="text-gray-700 dark:text-zinc-300 leading-relaxed">{content.text}</p>
+
+      {/* Educational image */}
+      {content.image && (
+        <div
+          className="cursor-pointer group"
+          onClick={() => setImageExpanded(true)}
+        >
+          <div className="relative overflow-hidden rounded-xl border border-gray-200 dark:border-zinc-700">
+            <img
+              src={content.image}
+              alt={content.imageCaption || content.title}
+              className="w-full h-auto max-h-64 object-contain bg-gray-50 dark:bg-zinc-800 group-hover:scale-105 transition-transform duration-300"
+            />
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+              <p className="text-xs text-white">{content.imageCaption || 'Click to expand'}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {content.bulletPoints && content.bulletPoints.length > 0 && (
         <ul className="space-y-3">
@@ -713,6 +809,33 @@ function InfoScene({
       >
         Got it!
       </button>
+
+      {/* Image modal */}
+      {imageExpanded && content.image && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setImageExpanded(false)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] w-full">
+            <button
+              onClick={() => setImageExpanded(false)}
+              className="absolute -top-10 right-0 text-white hover:text-gray-300"
+            >
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <img
+              src={content.image}
+              alt={content.imageCaption || content.title}
+              className="w-full h-full object-contain rounded-lg"
+            />
+            {content.imageCaption && (
+              <p className="text-center text-white mt-4">{content.imageCaption}</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

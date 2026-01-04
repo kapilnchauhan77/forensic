@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
+  <!-- Fingerprint ridges -->
+  <path d="M32 52 Q20 52 20 40 Q20 20 32 12 Q44 20 44 40 Q44 52 32 52" fill="none"/>
+  <path d="M32 48 Q24 48 24 38 Q24 22 32 16 Q40 22 40 38 Q40 48 32 48" fill="none"/>
+  <path d="M32 44 Q28 44 28 36 Q28 26 32 22 Q36 26 36 36 Q36 44 32 44" fill="none"/>
+  <path d="M32 38 Q30 38 30 34 Q30 30 32 28 Q34 30 34 34 Q34 38 32 38" fill="none"/>
+  <!-- Scanning corners -->
+  <path d="M8 20 L8 8 L20 8" stroke-width="3" fill="none"/>
+  <path d="M44 8 L56 8 L56 20" stroke-width="3" fill="none"/>
+  <path d="M56 44 L56 56 L44 56" stroke-width="3" fill="none"/>
+  <path d="M20 56 L8 56 L8 44" stroke-width="3" fill="none"/>
+  <!-- Scan line -->
+  <line x1="12" y1="32" x2="52" y2="32" stroke="#68d391" stroke-width="2" stroke-dasharray="4,2"/>
+</svg>

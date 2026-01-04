@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" stroke="#4a5568" stroke-width="1.5">
+  <rect width="200" height="200" fill="#f7fafc"/>
+  <!-- Plain Whorl Pattern - concentric circles with two deltas -->
+  <circle cx="100" cy="100" r="50" stroke-width="2"/>
+  <circle cx="100" cy="100" r="45"/>
+  <circle cx="100" cy="100" r="40"/>
+  <circle cx="100" cy="100" r="35"/>
+  <circle cx="100" cy="100" r="30"/>
+  <circle cx="100" cy="100" r="25"/>
+  <circle cx="100" cy="100" r="20"/>
+  <circle cx="100" cy="100" r="15"/>
+  <circle cx="100" cy="100" r="10"/>
+  <circle cx="100" cy="100" r="5"/>
+  <!-- Outer ridges flowing around -->
+  <path d="M30 170 Q30 100 60 60"/>
+  <path d="M170 170 Q170 100 140 60"/>
+  <path d="M35 165 Q40 100 65 65"/>
+  <path d="M165 165 Q160 100 135 65"/>
+  <!-- Core indicator -->
+  <circle cx="100" cy="100" r="3" fill="#e53e3e" stroke="none"/>
+  <!-- Two delta indicators -->
+  <polygon points="45,150 40,160 50,160" fill="#3182ce" stroke="none"/>
+  <polygon points="155,150 150,160 160,160" fill="#3182ce" stroke="none"/>
+  <!-- Label -->
+  <text x="100" y="195" text-anchor="middle" font-family="Arial" font-size="10" fill="#718096">Plain Whorl</text>
+</svg>

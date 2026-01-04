@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" stroke="#4a5568" stroke-width="1.5">
+  <rect width="200" height="200" fill="#f7fafc"/>
+  <!-- Double Loop Whorl Pattern - two separate loop formations -->
+  <!-- Left loop -->
+  <path d="M60 160 Q30 100 60 60 Q80 40 90 60 Q95 80 85 95 Q75 105 75 120" stroke-width="2"/>
+  <path d="M65 155 Q40 100 65 65 Q80 50 88 65 Q92 80 83 92 Q76 102 78 115"/>
+  <path d="M70 150 Q50 100 70 70 Q80 58 86 70 Q88 82 80 90"/>
+  <path d="M75 145 Q58 105 75 80 Q82 72 84 80"/>
+  <!-- Right loop -->
+  <path d="M140 160 Q170 100 140 60 Q120 40 110 60 Q105 80 115 95 Q125 105 125 120" stroke-width="2"/>
+  <path d="M135 155 Q160 100 135 65 Q120 50 112 65 Q108 80 117 92 Q124 102 122 115"/>
+  <path d="M130 150 Q150 100 130 70 Q120 58 114 70 Q112 82 120 90"/>
+  <path d="M125 145 Q142 105 125 80 Q118 72 116 80"/>
+  <!-- Connecting ridges -->
+  <path d="M85 100 Q100 95 115 100"/>
+  <path d="M88 105 Q100 102 112 105"/>
+  <!-- Core indicators (two) -->
+  <circle cx="78" cy="85" r="2" fill="#e53e3e" stroke="none"/>
+  <circle cx="122" cy="85" r="2" fill="#e53e3e" stroke="none"/>
+  <!-- Two delta indicators -->
+  <polygon points="45,150 40,160 50,160" fill="#3182ce" stroke="none"/>
+  <polygon points="155,150 150,160 160,160" fill="#3182ce" stroke="none"/>
+  <!-- Label -->
+  <text x="100" y="195" text-anchor="middle" font-family="Arial" font-size="10" fill="#718096">Double Loop Whorl</text>
+</svg>

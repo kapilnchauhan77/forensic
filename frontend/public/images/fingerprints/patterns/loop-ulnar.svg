@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" stroke="#4a5568" stroke-width="1.5">
+  <rect width="200" height="200" fill="#f7fafc"/>
+  <!-- Ulnar Loop Pattern - ridges loop toward ulnar bone (little finger side) -->
+  <!-- Loops opening to the right (left hand ulnar) -->
+  <path d="M180 180 Q180 60 100 60 Q40 60 40 100 Q40 130 70 140" stroke-width="2"/>
+  <path d="M175 175 Q175 70 100 70 Q50 70 50 105 Q50 130 75 138"/>
+  <path d="M170 170 Q170 80 100 80 Q60 80 60 110 Q60 130 80 136"/>
+  <path d="M165 165 Q165 88 100 88 Q68 88 68 112 Q68 128 85 134"/>
+  <path d="M160 160 Q160 95 100 95 Q75 95 75 115 Q75 128 90 132"/>
+  <path d="M155 155 Q155 100 100 100 Q82 100 82 118 Q82 128 95 130"/>
+  <path d="M150 150 Q150 105 100 105 Q88 105 88 120 Q88 126 100 128"/>
+  <path d="M145 145 Q145 110 105 110 Q95 110 95 120"/>
+  <!-- Core and delta indicators -->
+  <circle cx="100" cy="95" r="3" fill="#e53e3e" stroke="none"/>
+  <polygon points="55,145 50,155 60,155" fill="#3182ce" stroke="none"/>
+  <!-- Label -->
+  <text x="100" y="195" text-anchor="middle" font-family="Arial" font-size="10" fill="#718096">Ulnar Loop</text>
+</svg>
