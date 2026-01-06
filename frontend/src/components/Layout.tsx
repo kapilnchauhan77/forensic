@@ -12,15 +12,24 @@ import {
   PuzzlePieceIcon,
   AcademicCapIcon,
   InformationCircleIcon,
+  UsersIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../hooks/useAuth';
 import MobileNav from './MobileNav';
 import ThemeToggle from './ThemeToggle';
 import ClarioLogo from './ClarioLogo';
 
-const navigation = [
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  adminOnly?: boolean;
+}
+
+const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: HomeIcon },
   { name: 'Cases', href: '/cases', icon: FolderIcon },
+  { name: 'Users', href: '/admin/users', icon: UsersIcon, adminOnly: true },
   { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
   { name: 'Quiz', href: '/quiz', icon: PuzzlePieceIcon },
   { name: 'Learn', href: '/learning', icon: AcademicCapIcon },
@@ -102,7 +111,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   {/* Navigation */}
                   <nav className="flex-1 px-4 py-6">
                     <ul className="space-y-2">
-                      {navigation.map((item) => (
+                      {navigation
+                        .filter(item => !item.adminOnly || user?.role === 'admin')
+                        .map((item) => (
                         <li key={item.name}>
                           <Link
                             to={item.href}
@@ -170,7 +181,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <nav className="flex-1 px-4 py-6">
             <p className="px-4 mb-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Menu</p>
             <ul className="space-y-1.5">
-              {navigation.map((item) => (
+              {navigation
+                .filter(item => !item.adminOnly || user?.role === 'admin')
+                .map((item) => (
                 <li key={item.name}>
                   <Link
                     to={item.href}

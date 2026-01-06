@@ -56,6 +56,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     ALGORITHM: str = "HS256"
 
+    # Google OAuth
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    FRONTEND_URL: str = "http://localhost:5173"
+
     # Processing
     MAX_UPLOAD_SIZE_MB: int = 50
     SUPPORTED_IMAGE_FORMATS: list = ["png", "jpg", "jpeg", "tiff", "tif", "bmp"]

@@ -13,6 +13,7 @@ import Quiz from './pages/Quiz';
 import Learning from './pages/Learning';
 import CaseStory from './pages/CaseStory';
 import About from './pages/About';
+import UserManagement from './pages/UserManagement';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -58,6 +59,7 @@ function App() {
                 <Route path="/learning" element={<Learning />} />
                 <Route path="/learning/:caseId" element={<CaseStory />} />
                 <Route path="/about" element={<About />} />
+                <Route path="/admin/users" element={<UserManagement />} />
               </Routes>
             </Layout>
           </PrivateRoute>

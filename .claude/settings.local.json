@@ -32,7 +32,10 @@
       "Bash(uvicorn:*)",
       "Bash(export DATABASE_SYNC_URL=\"postgresql://postgres:postgres@localhost:5432/forensic_fingerprint\")",
       "Bash(alembic upgrade:*)",
-      "Bash(alembic stamp:*)"
+      "Bash(alembic stamp:*)",
+      "Bash(export DATABASE_SYNC_URL=\"postgresql://postgres:postgres@localhost:5432/forensic_db\")",
+      "Bash(PGPASSWORD=\"\" psql:*)",
+      "Bash(PGPASSWORD= psql:*)"
     ],
     "deny": [],
     "ask": []

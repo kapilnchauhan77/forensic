@@ -1,3 +1,5 @@
+export type AuthProvider = 'local' | 'google';
+
 export interface User {
   id: string;
   email: string;
@@ -8,6 +10,21 @@ export interface User {
   is_active: boolean;
   created_at: string;
   last_login: string | null;
+  auth_provider: AuthProvider;
+  profile_picture: string | null;
+}
+
+export interface GoogleAuthUrl {
+  url: string;
+  state: string;
+}
+
+export interface OAuthLoginResponse {
+  access_token: string;
+  token_type: string;
+  user: User;
+  is_new_user: boolean;
+  pending_approval: boolean;
 }
 
 export interface Case {

@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
-from ..models.user import UserRole
+from ..models.user import UserRole, AuthProvider
 
 
 class UserBase(BaseModel):
@@ -31,6 +31,8 @@ class UserResponse(UserBase):
     is_active: bool
     created_at: datetime
     last_login: Optional[datetime] = None
+    auth_provider: AuthProvider = AuthProvider.LOCAL
+    profile_picture: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -45,3 +47,22 @@ class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+
+# OAuth schemas
+class GoogleAuthUrl(BaseModel):
+    url: str
+    state: str
+
+
+class GoogleCallbackRequest(BaseModel):
+    code: str
+    state: str
+
+
+class OAuthLoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+    is_new_user: bool = False
+    pending_approval: bool = False
