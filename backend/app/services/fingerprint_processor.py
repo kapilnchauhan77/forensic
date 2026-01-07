@@ -20,6 +20,86 @@ from .gemini_enhancement import get_gemini_enhancer, GeminiEnhancementResult
 logger = logging.getLogger(__name__)
 
 
+def normalize_fingerprint_orientation(image: np.ndarray) -> np.ndarray:
+    """
+    Detect if fingerprint ridges are oriented vertically and rotate to horizontal.
+
+    Analyzes the dominant ridge flow direction using gradient analysis.
+    If ridges flow predominantly vertically (finger pointing up/down),
+    rotates the image 90° to make the finger horizontal.
+
+    Returns:
+        Rotated image if finger is vertical, original image if already horizontal
+    """
+    if len(image.shape) == 3:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = image.copy()
+
+    h, w = gray.shape
+
+    # Compute gradients to analyze ridge orientation
+    sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
+    sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
+
+    # Compute gradient magnitude and direction
+    magnitude = np.sqrt(sobelx**2 + sobely**2)
+
+    # Only consider pixels with significant gradient (ridge edges)
+    threshold = np.percentile(magnitude, 70)
+    significant_mask = magnitude > threshold
+
+    if np.sum(significant_mask) < 100:
+        # Not enough ridge information, fall back to aspect ratio
+        if h > w:
+            logger.info("Rotating image based on aspect ratio (h > w)")
+            if len(image.shape) == 3:
+                return cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            return cv2.rotate(gray, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        return image
+
+    # Compute orientation angles for significant pixels
+    # Ridges are perpendicular to gradient direction
+    # Gradient points across ridges, so ridge direction is gradient + 90°
+    angles = np.arctan2(sobely[significant_mask], sobelx[significant_mask])
+
+    # Convert to ridge direction (perpendicular to gradient)
+    ridge_angles = angles + np.pi / 2
+
+    # Normalize to [0, π) since ridges have 180° symmetry
+    ridge_angles = np.mod(ridge_angles, np.pi)
+
+    # Analyze distribution: 0 = horizontal ridges, π/2 = vertical ridges
+    # For a vertical finger, ridges run mostly horizontally (0 or π)
+    # For a horizontal finger, ridges run mostly vertically (π/2)
+
+    # Count angles in horizontal vs vertical bands
+    horizontal_band = np.sum(
+        (ridge_angles < np.pi / 4) | (ridge_angles > 3 * np.pi / 4)
+    )
+    vertical_band = np.sum(
+        (ridge_angles >= np.pi / 4) & (ridge_angles <= 3 * np.pi / 4)
+    )
+
+    # If ridges are predominantly horizontal, the finger is vertical
+    # (ridges run perpendicular to the finger's length)
+    finger_is_vertical = horizontal_band > vertical_band
+
+    logger.info(
+        f"Orientation analysis: horizontal_band={horizontal_band}, vertical_band={vertical_band}, "
+        f"finger_is_vertical={finger_is_vertical}"
+    )
+
+    if finger_is_vertical:
+        # Rotate 90° CCW to make finger horizontal
+        logger.info("Rotating fingerprint to horizontal orientation")
+        if len(image.shape) == 3:
+            return cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        return cv2.rotate(gray, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+    return image
+
+
 class FingerprintProcessorService:
     """Orchestrates the fingerprint processing pipeline"""
 
@@ -58,6 +138,26 @@ class FingerprintProcessorService:
             # Load original image
             original_bytes = await self.storage.get_file(fingerprint.original_storage_path)
             original_image = bytes_to_image(original_bytes)
+
+            # Step 0: Normalize orientation - ensure finger is horizontal
+            logger.info(f"Normalizing orientation for fingerprint {fingerprint_id}")
+            rotated_image = normalize_fingerprint_orientation(original_image)
+
+            # Check if image was rotated (dimensions changed)
+            if rotated_image.shape != original_image.shape:
+                logger.info(f"Fingerprint {fingerprint_id} was rotated to horizontal orientation")
+                # Save the rotated image as the new "original" for display
+                rotated_bytes = image_to_bytes(rotated_image)
+                rotated_path = await self.storage.store_overlay(
+                    content=rotated_bytes,
+                    fingerprint_id=fingerprint_id,
+                    overlay_type="rotated_original",
+                )
+                # Update the fingerprint's original path to the rotated version
+                fingerprint.original_storage_path = rotated_path
+                await self.db.commit()
+
+            original_image = rotated_image
 
             # Step 1: Quality assessment
             quality_result = self.quality_assessor.assess(original_image)
