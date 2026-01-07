@@ -69,7 +69,7 @@ class FingerprintClassifier:
     """Gemini VLM-based fingerprint pattern classification with FBI/NCIC standards"""
 
     PROMPT_VERSION = (
-        "3.2.0"  # Emphasized delta count as primary classifier to reduce whorl bias
+        "3.4.1"  # Smart rotation: analyze ridge flow to detect vertical fingers
     )
 
     CLASSIFICATION_PROMPT = """You are a certified forensic fingerprint examiner analyzing a friction ridge impression according to FBI and NCIC standards.
@@ -87,17 +87,26 @@ Determine how this print was deposited:
 Count the deltas FIRST, then classify:
 - 0 deltas → ARCH (ridges flow side to side without recurving)
 - 1 delta → LOOP (ridges recurve around a core, exit same side they entered)
-- 2+ deltas → WHORL (circular/spiral patterns)
+- 2+ deltas → WHORL (circular/spiral patterns) - RARE, only ~25-30% of fingerprints
 
 Pattern definitions:
 - arch: NO delta (0). Ridges enter one side and exit the other WITHOUT recurving.
-- loop: ONE delta (1). Ridges recurve around ONE core and exit the SAME side.
-- whorl: TWO or more deltas (2+). Circular/spiral formations. MUST have at least 2 deltas.
+- loop: ONE delta (1). Ridges recurve around ONE core and exit the SAME side. MOST COMMON (~65% of prints).
+- whorl: TWO or more deltas (2+). Circular/spiral formations. MUST have at least 2 CLEARLY VISIBLE deltas.
 - unknown: Cannot determine with forensic confidence.
 - partial: Insufficient ridge area visible for classification.
 
+**IMPORTANT ANTI-WHORL GUIDELINES:**
+1. LOOPS are the MOST COMMON pattern (~65% of all fingerprints). When in doubt, classify as LOOP.
+2. WHORLS are relatively UNCOMMON (~25-30%). Do NOT default to whorl.
+3. A circular or spiral APPEARANCE alone does NOT make a whorl - you MUST see TWO distinct deltas.
+4. If you see ONE delta with circular ridges around a core, it is a CENTRAL POCKET LOOP, NOT a whorl.
+5. If you cannot CLEARLY identify TWO separate delta formations, classify as LOOP.
+6. Many patterns that "look like" whorls are actually central pocket loops or nutant loops.
+
 **WARNING: Do NOT classify as whorl unless you can identify TWO distinct delta formations!**
 A single spiral or circular pattern with only ONE delta is a LOOP (central pocket loop), not a whorl.
+When uncertain between whorl and loop, ALWAYS choose LOOP.
 
 ## 3. PATTERN SUBTYPE (FBI Extended Classification)
 
@@ -202,6 +211,78 @@ CONFIDENCE GUIDELINES:
             self.CLASSIFICATION_PROMPT.encode()
         ).hexdigest()[:16]
 
+    def _normalize_orientation(self, image: np.ndarray) -> np.ndarray:
+        """
+        Detect if fingerprint ridges are oriented vertically and rotate to horizontal.
+
+        Analyzes the dominant ridge flow direction using gradient analysis.
+        If ridges flow predominantly vertically (finger pointing up/down),
+        rotates the image 90° to make the finger horizontal.
+
+        Returns:
+            Rotated image if finger is vertical, original image if already horizontal
+        """
+        if len(image.shape) == 3:
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = image.copy()
+
+        h, w = gray.shape
+
+        # Compute gradients to analyze ridge orientation
+        sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
+        sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
+
+        # Compute gradient magnitude and direction
+        magnitude = np.sqrt(sobelx**2 + sobely**2)
+
+        # Only consider pixels with significant gradient (ridge edges)
+        threshold = np.percentile(magnitude, 70)
+        significant_mask = magnitude > threshold
+
+        if np.sum(significant_mask) < 100:
+            # Not enough ridge information, fall back to aspect ratio
+            if h > w:
+                if len(image.shape) == 3:
+                    return cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                return cv2.rotate(gray, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            return image
+
+        # Compute orientation angles for significant pixels
+        # Ridges are perpendicular to gradient direction
+        # Gradient points across ridges, so ridge direction is gradient + 90°
+        angles = np.arctan2(sobely[significant_mask], sobelx[significant_mask])
+
+        # Convert to ridge direction (perpendicular to gradient)
+        ridge_angles = angles + np.pi / 2
+
+        # Normalize to [0, π) since ridges have 180° symmetry
+        ridge_angles = np.mod(ridge_angles, np.pi)
+
+        # Analyze distribution: 0 = horizontal ridges, π/2 = vertical ridges
+        # For a vertical finger, ridges run mostly horizontally (0 or π)
+        # For a horizontal finger, ridges run mostly vertically (π/2)
+
+        # Count angles in horizontal vs vertical bands
+        horizontal_band = np.sum(
+            (ridge_angles < np.pi / 4) | (ridge_angles > 3 * np.pi / 4)
+        )
+        vertical_band = np.sum(
+            (ridge_angles >= np.pi / 4) & (ridge_angles <= 3 * np.pi / 4)
+        )
+
+        # If ridges are predominantly horizontal, the finger is vertical
+        # (ridges run perpendicular to the finger's length)
+        finger_is_vertical = horizontal_band > vertical_band
+
+        if finger_is_vertical:
+            # Rotate 90° CCW to make finger horizontal
+            if len(image.shape) == 3:
+                return cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            return cv2.rotate(gray, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+        return image
+
     def _validate_pattern_consistency(
         self,
         pattern_type: str,
@@ -237,7 +318,9 @@ CONFIDENCE GUIDELINES:
                 pattern_type = "arch"
                 # Tented arch can look somewhat spiral-like
                 pattern_subtype = "tented_arch"
-                correction_reason = f"Corrected whorl→arch: no deltas detected (whorls require 2+)"
+                correction_reason = (
+                    f"Corrected whorl→arch: no deltas detected (whorls require 2+)"
+                )
             confidence *= 0.6  # Reduce confidence for corrected classification
 
         # ARCH cannot have deltas (by definition)
@@ -245,7 +328,9 @@ CONFIDENCE GUIDELINES:
             if delta_count == 1:
                 pattern_type = "loop"
                 pattern_subtype = "ulnar_loop"
-                correction_reason = f"Corrected arch→loop: {delta_count} delta detected (arches have 0)"
+                correction_reason = (
+                    f"Corrected arch→loop: {delta_count} delta detected (arches have 0)"
+                )
             else:  # delta_count >= 2
                 pattern_type = "whorl"
                 pattern_subtype = "plain_whorl"
@@ -257,7 +342,9 @@ CONFIDENCE GUIDELINES:
             if delta_count == 0:
                 pattern_type = "arch"
                 pattern_subtype = "plain_arch"
-                correction_reason = f"Corrected loop→arch: no deltas detected (loops have exactly 1)"
+                correction_reason = (
+                    f"Corrected loop→arch: no deltas detected (loops have exactly 1)"
+                )
             elif delta_count >= 2:
                 pattern_type = "whorl"
                 pattern_subtype = "double_loop_whorl"
@@ -277,6 +364,9 @@ CONFIDENCE GUIDELINES:
         Returns:
             Tuple of (is_genuine_fingerprint: bool, image_type: str, reason: str)
         """
+        # Normalize orientation: rotate vertical fingerprints to horizontal
+        image = self._normalize_orientation(image)
+
         PRE_CHECK_PROMPT = """Examine this image carefully. Determine if this shows a fingerprint pattern.
 
 Answer with JSON ONLY:
@@ -342,7 +432,7 @@ KEY DISTINCTION:
             )
 
             print("\n\n\n\n\nGEMINI RESPONSE")
-            print(response)
+            print(response.text)
             print("GEMINI RESPONSE\n\n\n\n\n")
             if not response.text:
                 # Empty response - allow through since presence detector already validated
@@ -393,6 +483,9 @@ KEY DISTINCTION:
         if self.client is None:
             return self._fallback_classification(image)
 
+        # Normalize orientation: rotate vertical fingerprints to horizontal
+        image = self._normalize_orientation(image)
+
         # Prepare image for API
         if len(image.shape) == 3:
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -436,6 +529,9 @@ KEY DISTINCTION:
                     max_output_tokens=8192,
                 ),
             )
+            print("\n\n\n\n\nGEMINI RESPONSE")
+            print(response.text)
+            print("GEMINI RESPONSE\n\n\n\n\n")
 
             # Check if response has text
             if not response.text:
@@ -560,6 +656,7 @@ KEY DISTINCTION:
             )
             if correction_reason:
                 import logging
+
                 logging.getLogger(__name__).warning(
                     f"Pattern consistency correction: {correction_reason}"
                 )
@@ -660,9 +757,7 @@ KEY DISTINCTION:
             )
             return self._fallback_classification(image)
 
-    def _detect_singular_points_poincare(
-        self, image: np.ndarray
-    ) -> tuple[list, list]:
+    def _detect_singular_points_poincare(self, image: np.ndarray) -> tuple[list, list]:
         """
         Detect singular points (cores and deltas) using Poincare index method.
 
@@ -706,9 +801,10 @@ KEY DISTINCTION:
                     j * block_size : (j + 1) * block_size,
                 ]
                 # Average orientation in block
-                orientation_blocks[i, j] = np.arctan2(
-                    np.mean(np.sin(2 * block)), np.mean(np.cos(2 * block))
-                ) / 2
+                orientation_blocks[i, j] = (
+                    np.arctan2(np.mean(np.sin(2 * block)), np.mean(np.cos(2 * block)))
+                    / 2
+                )
 
         cores = []
         deltas = []
@@ -719,13 +815,13 @@ KEY DISTINCTION:
                 # Get 8-connected neighbors in clockwise order
                 neighbors = [
                     orientation_blocks[i - 1, j - 1],  # top-left
-                    orientation_blocks[i - 1, j],      # top
+                    orientation_blocks[i - 1, j],  # top
                     orientation_blocks[i - 1, j + 1],  # top-right
-                    orientation_blocks[i, j + 1],      # right
+                    orientation_blocks[i, j + 1],  # right
                     orientation_blocks[i + 1, j + 1],  # bottom-right
-                    orientation_blocks[i + 1, j],      # bottom
+                    orientation_blocks[i + 1, j],  # bottom
                     orientation_blocks[i + 1, j - 1],  # bottom-left
-                    orientation_blocks[i, j - 1],      # left
+                    orientation_blocks[i, j - 1],  # left
                 ]
 
                 # Compute Poincare index (sum of orientation differences)
@@ -762,9 +858,9 @@ KEY DISTINCTION:
                     continue
                 cluster = [p1]
                 used[i] = True
-                for j, p2 in enumerate(points[i + 1:], i + 1):
+                for j, p2 in enumerate(points[i + 1 :], i + 1):
                     if not used[j]:
-                        dist = np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+                        dist = np.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
                         if dist < min_dist:
                             cluster.append(p2)
                             used[j] = True
@@ -789,6 +885,9 @@ KEY DISTINCTION:
         - 1 delta → LOOP
         - 2+ deltas → WHORL
         """
+        # Normalize orientation: rotate vertical fingerprints to horizontal
+        image = self._normalize_orientation(image)
+
         if len(image.shape) == 3:
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         else:
