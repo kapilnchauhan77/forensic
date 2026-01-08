@@ -44,7 +44,9 @@ Enhance this fingerprint image for forensic analysis by:
 5. Preserving the original ridge flow and pattern characteristics
 
 Important: Do NOT alter the fundamental pattern structure. Only enhance visibility and clarity.
-Return the full image with enhanced fingerprint image suitable for forensic identification."""
+Return the full image with enhanced fingerprint image suitable for forensic identification.
+Make sure to return the exact same image just with the enhanced fingerprint and no other changes.
+"""
 
     def __init__(self):
         self.client = None

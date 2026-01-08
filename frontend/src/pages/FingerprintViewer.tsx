@@ -452,28 +452,26 @@ export default function FingerprintViewer() {
             >
               {viewMode === 'comparison' && originalUrl && enhancedUrl ? (
                 <div className="relative w-full h-full">
-                  {/* Enhanced image (full) */}
+                  {/* Both images share exact same container and sizing to ensure perfect overlap */}
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <img
-                      src={enhancedUrl}
-                      alt="Enhanced"
-                      className="max-w-full max-h-full object-contain"
-                      style={{ transform: `scale(${zoom})` }}
-                      draggable={false}
-                    />
-                  </div>
-                  {/* Original image (clipped) */}
-                  <div
-                    className="absolute inset-0 flex items-center justify-center"
-                    style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
-                  >
-                    <img
-                      src={originalUrl}
-                      alt="Original"
-                      className="max-w-full max-h-full object-contain"
-                      style={{ transform: `scale(${zoom})` }}
-                      draggable={false}
-                    />
+                    {/* Wrapper that scales and contains both images */}
+                    <div className="relative max-w-full max-h-full" style={{ transform: `scale(${zoom})` }}>
+                      {/* Enhanced image (base layer - sets container dimensions) */}
+                      <img
+                        src={enhancedUrl}
+                        alt="Enhanced"
+                        className="max-w-[calc(100vw-2rem)] max-h-[calc(50vh-60px)] lg:max-w-[calc(66vw-2rem)] block"
+                        draggable={false}
+                      />
+                      {/* Original image (clipped overlay - fills exact same space) */}
+                      <img
+                        src={originalUrl}
+                        alt="Original"
+                        className="absolute top-0 left-0 w-full h-full"
+                        style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
+                        draggable={false}
+                      />
+                    </div>
                   </div>
                   {/* Slider */}
                   <div
