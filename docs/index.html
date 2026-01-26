@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Clario Documentation</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta name="description" content="Clario - Forensic Fingerprint Analysis Platform Documentation">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
+
+  <!-- Theme -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple-dark.css">
+
+  <!-- Custom styles -->
+  <style>
+    :root {
+      --theme-color: #0284c7;
+      --sidebar-width: 280px;
+      --sidebar-nav-link-color--active: #0284c7;
+      --sidebar-nav-link-border-color--active: #0284c7;
+      --link-color: #0284c7;
+      --blockquote-border-color: #0284c7;
+    }
+
+    .sidebar-nav > ul > li > a {
+      font-weight: 600;
+    }
+
+    .markdown-section h1 {
+      border-bottom: 2px solid var(--theme-color);
+      padding-bottom: 0.5rem;
+    }
+
+    .markdown-section table {
+      display: table;
+      width: 100%;
+    }
+
+    .markdown-section pre {
+      border-radius: 8px;
+    }
+
+    .markdown-section code {
+      border-radius: 4px;
+    }
+
+    /* Cover page styling */
+    .cover {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+    }
+
+    .cover .cover-main {
+      margin: 0 auto;
+    }
+
+    .cover a.anchor {
+      color: var(--theme-color);
+    }
+
+    /* Badge styling */
+    .markdown-section img[alt="License"],
+    .markdown-section img[alt="Python"],
+    .markdown-section img[alt="React"],
+    .markdown-section img[alt="FastAPI"],
+    .markdown-section img[alt="PostgreSQL"] {
+      display: inline-block;
+      margin-right: 4px;
+    }
+
+    /* Mermaid diagram fixes */
+    .mermaid {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">Loading documentation...</div>
+
+  <script>
+    window.$docsify = {
+      name: 'Clario',
+      repo: '',
+      loadSidebar: true,
+      subMaxLevel: 3,
+      auto2top: true,
+      search: {
+        placeholder: 'Search documentation',
+        noData: 'No results found',
+        paths: 'auto',
+        depth: 3
+      },
+      copyCode: {
+        buttonText: 'Copy',
+        errorText: 'Error',
+        successText: 'Copied!'
+      },
+      pagination: {
+        previousText: 'Previous',
+        nextText: 'Next',
+        crossChapter: true,
+        crossChapterText: true
+      },
+      tabs: {
+        persist: true,
+        sync: true,
+        theme: 'classic',
+        tabComments: true,
+        tabHeadings: true
+      },
+      themeColor: '#0284c7',
+      coverpage: true,
+      onlyCover: false,
+      notFoundPage: true,
+      relativePath: true,
+
+      // Plugin configurations
+      plugins: [
+        function(hook) {
+          hook.beforeEach(function(content) {
+            // Add "Edit on GitHub" link
+            return content;
+          });
+        }
+      ]
+    };
+  </script>
+
+  <!-- Docsify core -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/docsify.min.js"></script>
+
+  <!-- Plugins -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/search.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-copy-code@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-pagination@2/dist/docsify-pagination.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-tabs@1"></script>
+
+  <!-- Syntax highlighting -->
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-sql.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-jsx.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-tsx.min.js"></script>
+
+  <!-- Mermaid diagrams -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'dark'
+    });
+
+    window.$docsify.plugins = (window.$docsify.plugins || []).concat([
+      function(hook) {
+        hook.afterEach(function(html, next) {
+          next(html);
+        });
+        hook.doneEach(function() {
+          mermaid.init(undefined, '.mermaid');
+        });
+      }
+    ]);
+  </script>
+</body>
+</html>
